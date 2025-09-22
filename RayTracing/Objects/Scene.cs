@@ -10,6 +10,11 @@ namespace RayTracing.Objects
     {
         private List<Sphere> spheres = [];
         public Scene() { }
+        // In your Scene type, add:
+        public List<PointLight> Lights = new();
+
+            // Helper if you like:
+        public IEnumerable<PointLight> GetLights() => Lights;
         public void AddSphere(Sphere sphere)
         {
             spheres.Add(sphere);
