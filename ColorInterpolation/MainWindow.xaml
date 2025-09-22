@@ -3,11 +3,37 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:ColorInterpolation"
+        xmlns:local="clr-namespace:ColorInterpolation" xmlns:xctk="http://schemas.xceed.com/wpf/xaml/toolkit"
         mc:Ignorable="d"
         Title="MainWindow" Height="450" Width="800">
     <Grid>
-        <Image x:Name="imgDisplay"
-           Stretch="Fill"/>
+        <Grid>
+            <Image x:Name="imgDisplay"
+   Stretch="Fill"/>
+
+                <!-- Foreground UI: Color Pickers and Orientation -->
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Top" Background="#80FFFFFF" Margin="10,10,0,0" >
+                <!-- First Color Picker -->
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="10">
+                    <Label Content="Color Picker 1:" VerticalAlignment="Center" />
+                    <xctk:ColorPicker Name="ColorPicker1" Width="150" Height="25" SelectedColorChanged="ColorPicker1_SelectedColorChanged" />
+                </StackPanel>
+
+                <!-- Second Color Picker -->
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="10">
+                    <Label Content="Color Picker 2:" VerticalAlignment="Center" />
+                    <xctk:ColorPicker Name="ColorPicker2" Width="150" Height="25" SelectedColorChanged="ColorPicker2_SelectedColorChanged" />
+                </StackPanel>
+
+                <!-- Orientation Radio Buttons -->
+                <GroupBox Header="Orientation" Margin="10" VerticalAlignment="Center" Background="Transparent">
+                    <StackPanel>
+                        <RadioButton Name="RadioHorizontal" Content="Horizontal" IsChecked="True" Checked="OrientationChanged"/>
+                        <RadioButton Name="RadioVertical" Content="Vertical" Checked="OrientationChanged"/>
+                        <RadioButton Name="RadioDiagonal" Content="Diagonal" Checked="OrientationChanged"/>
+                    </StackPanel>
+                </GroupBox>
+            </StackPanel>
+        </Grid>
     </Grid>
 </Window>

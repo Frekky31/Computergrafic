@@ -19,33 +19,64 @@ namespace ColorInterpolation
     {
         private const int ImageWidth = 300;
         private const int ImageHeight = 300;
-        private WriteableBitmap bitmap;
-        private Vector3[] pixelColors;
+        private readonly WriteableBitmap bitmap = new(ImageWidth, ImageHeight, 96, 96, PixelFormats.Bgra32, null);
+        private readonly Vector3[] pixelColors = new Vector3[ImageWidth * ImageHeight];
+        private Orientation orientation = Orientation.Horizontal;
 
-        private Vector3 Color1 = new(0.5f, 0.3f, 1f);
-        private Vector3 Color2 = new(0.75f, 0.6f, 0.01f);
+        private Vector3 Color1 = new(0f, 1f, 1f);
+        private Vector3 Color2 = new(0f, 1f, 0f);
 
         public MainWindow()
         {
             InitializeComponent();
-            InitializeImage();
+            PrintImage();
+        }
+
+        private void PrintImage()
+        {
+            Interpolation();
             RenderVector3ColorsToBitmap();
             imgDisplay.Source = bitmap;
         }
 
-        private void InitializeImage()
+        private void Additive()
         {
-            // Initialize WriteableBitmap
-            bitmap = new WriteableBitmap(ImageWidth, ImageHeight, 96, 96, PixelFormats.Bgra32, null);
-
-            pixelColors = new Vector3[ImageWidth * ImageHeight];
-
+            var col = Vector3.Multiply(Color1, Color2);
+            
             for (int i = 0; i < ImageHeight; i++)
             {
                 for (int j = 0; j < ImageWidth; j++)
                 {
                     int index = i * ImageWidth + j;
-                    float t = (float)j / (ImageWidth - 1);
+                    pixelColors[index] = col;
+                }
+            }
+        }
+
+        private void Interpolation()
+        {
+            for (int i = 0; i < ImageHeight; i++)
+            {
+                for (int j = 0; j < ImageWidth; j++)
+                {
+                    int index = i * ImageWidth + j;
+                    float t = 0;
+
+                    switch (orientation)
+                    {
+                        case Orientation.Vertical:
+                            t = (float)i / (ImageHeight - 1);
+                            break;
+                        case Orientation.Horizontal:
+                            t = (float)j / (ImageWidth - 1);
+                            break;
+                        case Orientation.Diagonal:
+                            t = (float)((i + j) / (ImageWidth - 1 + Height - 1));
+                            break;
+                        default:
+                            break;
+                    }
+
                     pixelColors[index] = Vector3.Lerp(Color1, Color2, t);
                 }
             }
@@ -86,5 +117,60 @@ namespace ColorInterpolation
 
             return (byte)(c * 255);
         }
+
+        private static float SrgbByteToFloat(byte c)
+        {
+            float f = c / 255f;
+
+            f = (float)Math.Pow(f, 2.2);
+
+            f = Math.Clamp(f, 0f, 1f);
+
+            return f;
+        }
+
+        private void ColorPicker1_SelectedColorChanged(object sender, RoutedPropertyChangedEventArgs<Color?> e)
+        {
+            if (e.NewValue.HasValue)
+            {
+                Color1.X = SrgbByteToFloat(e.NewValue.Value.R);
+                Color1.Y = SrgbByteToFloat(e.NewValue.Value.G);
+                Color1.Z = SrgbByteToFloat(e.NewValue.Value.B);
+                PrintImage();
+            }
+        }
+
+        private void ColorPicker2_SelectedColorChanged(object sender, RoutedPropertyChangedEventArgs<Color?> e)
+        {
+            if (e.NewValue.HasValue)
+            {
+                Color2.X = SrgbByteToFloat(e.NewValue.Value.R);
+                Color2.Y = SrgbByteToFloat(e.NewValue.Value.G);
+                Color2.Z = SrgbByteToFloat(e.NewValue.Value.B);
+                PrintImage();
+            }
+        }
+
+        private void OrientationChanged(object sender, RoutedEventArgs e)
+        {
+            if (RadioHorizontal.IsChecked == true)
+            {
+                orientation = Orientation.Horizontal;
+            }
+            else if (RadioVertical.IsChecked == true)
+            {
+                orientation = Orientation.Vertical;
+            }
+            else if (RadioDiagonal.IsChecked == true)
+            {
+                orientation = Orientation.Diagonal;
+            }
+            PrintImage();
+        }
+    }
+
+    public enum Orientation
+    {
+        Vertical, Horizontal, Diagonal
     }
 }
