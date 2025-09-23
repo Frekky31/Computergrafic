@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace RayTracing.Objects
 {
-    internal class Sphere
+    public class Sphere
     {
         public double radius { get; set; }
         public Vector3 center { get; set; }
@@ -20,6 +20,5 @@ namespace RayTracing.Objects
             this.center = center;
             this.color = color;
         }
-
     }
 }
