@@ -28,7 +28,7 @@ namespace RayTracing.Core
                     }
                     else
                     {
-                        target.ColourBuffer[index] = new Vector3(0.1f, 0.1f, 0.1f);
+                        target.ColourBuffer[index] = new Vector3(0f, 0f, 0f);
                     }
                 }
             });
@@ -88,7 +88,6 @@ namespace RayTracing.Core
 
         private static Vector3 ComputeColor(Scene scene, Vector3 o, Vector3 d, HitPoint hit)
         {
-            
             return hit.Color;
         }
     }
