@@ -5,16 +5,24 @@ namespace RayTracing.Objects
 {
     public class TestScene : Scene
     {
-        Camera camera = new(new(0, 0, -4), new(0, 0, 6), new(0, 1, 0), 36);
+        Camera camera = new(new(0, 0, -5), new(0, 0, 6), new(0, 1, 0), 36);
         Camera camera2 = new(new(-0.9f, -0.5f, 0.9f), new(0, 0, 0), new(0, 1, 0), 110);
-        Camera camera3 = new(new(0, 0, -4), new(0, 0, 6), new(0, 1, 0), 110);
+        Camera camera3 = new(new(0, 0, -1.5f), new(0, 0, 6), new(0, 1, 0), 140);
+
         Camera cameraM = new(new(-0.9f, -0.5f, 0.9f), new(0, 0, 0), new(0, 1, 0), 101);
-        int lastCam;
-        int curCam;
         List<Camera> cameras;
 
         public TestScene()
         {
+            var sphA = new Sphere(0.05, new Vector3(0.5f, 0.9f, -1f), new Vector3(1f, 1f, 1f));
+            var sphB = new Sphere(0.05, new Vector3(0.9f, 0.9f, -1f), new Vector3(0.5f, 0.5f, 0.5f));
+            var sphC = new Sphere(0.05, new Vector3(0.9f, 0.1f, -1f), new Vector3(0.1f, 0.1f, 0.1f));
+            var sphD = new Sphere(0.05, new Vector3(0.5f, 0.1f, -1f), new Vector3(0.1f, 0.1f, 0.1f));
+            var sphE = new Sphere(0.05, new Vector3(0.9f, 0.9f, -0.5f), new Vector3(0.5f, 0.5f, 0.5f));
+            var sphF = new Sphere(0.05, new Vector3(0.9f, 0.1f, -0.5f), new Vector3(0.1f, 0.1f, 0.1f));
+            var sphG = new Sphere(0.05, new Vector3(0.5f, 0.9f, -0.5f), new Vector3(0.5f, 0.5f, 0.5f));
+            var sphH = new Sphere(0.05, new Vector3(0.5f, 0.1f, -0.5f), new Vector3(0.1f, 0.1f, 0.1f));
+
             Spheres.AddRange(
             [
                 new Sphere(1000, new Vector3(-1001, 0, 0), new Vector3(0.7f, 0.07f, 0.03f)),
@@ -27,13 +35,34 @@ namespace RayTracing.Objects
                 new Sphere(0.6, new Vector3(0.3f, -0.4f, 0.3f), new Vector3(0.04f, 0.4f, 0.7f)),
                 new Sphere(0.8, new Vector3(-0.8f, 0.8f, 0.8f), new Vector3(0.85f, 0.55f, 0.03f)),
 
-                new Sphere(0.1, new Vector3(0.3f, -0.4f, -1f), new Vector3(0.5f, 0.05f, 0.07f)),
+                //new Sphere(0.1, new Vector3(0.3f, -0.4f, -1f), new Vector3(0.5f, 0.05f, 0.07f)),
+                sphA,
+                sphB,
+                sphC,
+                sphD,
+                sphE,
+                sphF,
+                sphG,
+                sphH,
             ]);
 
+            Cube cube = new(new Vector3(0.25f, -0.25f, -1f), new Vector3(0.25f, 0.25f, 0.25f), new Vector3(0.2f, 0.3f, 0.2f));
+            Triangles.AddRange(cube.ToTriangles());
+            Triangles.AddRange(
+            [
+                new Triangle(sphA.center, sphB.center, sphC.center, new Vector3(0.1f, 0.5f, 0.1f)),
+                new Triangle(sphC.center, sphD.center, sphA.center, new Vector3(0.5f, 0.1f, 0.1f)),
+                new Triangle(sphB.center, sphE.center, sphF.center, new Vector3(0.5f, 0.1f, 0.1f)),
+                new Triangle(sphF.center, sphC.center, sphB.center, new Vector3(0.5f, 0.1f, 0.1f)),
+                new Triangle(sphA.center, sphH.center, sphG.center, new Vector3(0.5f, 0.1f, 0.1f)),
+                new Triangle(sphA.center, sphD.center, sphH.center, new Vector3(0.1f, 0.5f, 0.1f)),
+                
+            ]);
+
+
+
             Camera = cameraM;
-            cameras = [camera, camera2, camera3];
-            lastCam = cameras.Count - 1;
-            curCam = 0;
+            cameras = [camera3, camera, camera2, camera3, camera, camera3, camera];
         }
 
 
@@ -43,65 +72,81 @@ namespace RayTracing.Objects
 
         public override void Update(RenderTarget target, float delta)
         {
-            float lingerTime = 1.0f;
-            float timeToSwitch = 5.0f;
-            float totalPhaseTime = 2 * timeToSwitch + 2 * lingerTime;
-
-            float totalTime = cameras.Count * totalPhaseTime;
-
             elapsedTime += delta;
-            
-            if (elapsedTime > totalTime)
-                elapsedTime -= totalTime;
-            int phase = (int)(elapsedTime / totalPhaseTime);
-            float phaseTime = elapsedTime - phase * totalPhaseTime;
 
-            lastCam = phase % cameras.Count;
-            curCam = (phase + 1) % cameras.Count;
-
-            float lerpFactor = 0;
-            if (phaseTime < timeToSwitch)
-            {
-                lerpFactor = phaseTime / timeToSwitch;
-            }
-            else if (phaseTime < timeToSwitch + lingerTime)
-            {
-                lerpFactor = 1;
-            }
-            else if (phaseTime < 2 * timeToSwitch + lingerTime)
-            {
-                lerpFactor = 1 - (phaseTime - timeToSwitch - lingerTime) / timeToSwitch;
-            }
-            else
-            {
-                lerpFactor = 0;
-            }
-
-            cameraM.Position = Vector3.Lerp(cameras[lastCam].Position, cameras[curCam].Position, lerpFactor);
-            cameraM.LookAt = Vector3.Lerp(cameras[lastCam].LookAt, cameras[curCam].LookAt, lerpFactor);
-            cameraM.Fov = (1 - lerpFactor) * cameras[lastCam].Fov + lerpFactor * cameras[curCam].Fov;
+            CameraBlend blend = GetCameraBlend(elapsedTime, 2f, 4f, cameras.Count);
+            cameraM.Position = Vector3.Lerp(cameras[blend.fromIndex].Position, cameras[blend.toIndex].Position, blend.lerp);
+            cameraM.LookAt = Vector3.Lerp(cameras[blend.fromIndex].LookAt, cameras[blend.toIndex].LookAt, blend.lerp);
+            cameraM.Fov = (1 - blend.lerp) * cameras[blend.fromIndex].Fov + blend.lerp * cameras[blend.toIndex].Fov;
 
 
             if (Spheres.Count == 0)
                 return;
 
-            Sphere lastSphere = Spheres[^1];
-
-            float speed = 0.5f;
-            float newX = lastSphere.center.X + speed * delta * mult;
-            if (newX > 0.8f)
+            bool bounce = false;
+            if (bounce)
             {
-                newX = 0.8f;
-                mult = -1;
-            }
-            else if (newX < -0.8f)
-            {
-                newX = -0.8f;
-                mult = 1;
-            }
+                Sphere lastSphere = Spheres[^1];
 
-            var center = lastSphere.center;
-            lastSphere.center = new Vector3(newX, center.Y, center.Z);
+                float speed = 0.5f;
+                float newX = lastSphere.center.X + speed * delta * mult;
+                if (newX > 0.8f)
+                {
+                    newX = 0.8f;
+                    mult = -1;
+                }
+                else if (newX < -0.8f)
+                {
+                    newX = -0.8f;
+                    mult = 1;
+                }
+
+                // Directly modify the X component of the existing center vector
+                var center = lastSphere.center;
+                center.X = newX;
+                lastSphere.center = center;
+            }
         }
+        public static CameraBlend GetCameraBlend(
+        float elapsedTime,
+        float transitionTime,
+        float lingerTime,
+        int cameraCount)
+        {
+            if (cameraCount <= 0) return new CameraBlend { fromIndex = -1, toIndex = -1, lerp = 0f };
+
+            if (transitionTime <= 0f) // instant cut, only linger
+                transitionTime = 0.000001f; // avoid div-by-zero; treat as nearly instant
+
+            if (lingerTime < 0f) lingerTime = 0f;
+            if (elapsedTime < 0f) elapsedTime = 0f;
+
+            float segmentDuration = transitionTime + lingerTime;
+            if (segmentDuration <= 0f) // degenerate: no time passes, stick to first camera
+                return new CameraBlend { fromIndex = 0, toIndex = (cameraCount > 1 ? 1 % cameraCount : 0), lerp = 1f };
+
+            float cycleDuration = segmentDuration * cameraCount;
+            float tCycle = elapsedTime % cycleDuration;
+
+            int segmentIndex = (int)System.Math.Floor(tCycle / segmentDuration);
+            int fromIndex = segmentIndex % cameraCount;
+            int toIndex = (fromIndex + 1) % cameraCount;
+
+            float tInSegment = tCycle - segmentIndex * segmentDuration;
+
+            float lerp = tInSegment < transitionTime
+                ? tInSegment / transitionTime
+                : 1f; // linger phase
+
+            return new CameraBlend { fromIndex = fromIndex, toIndex = toIndex, lerp = lerp };
+        }
+
+    }
+
+    public struct CameraBlend
+    {
+        public int fromIndex;
+        public int toIndex;
+        public float lerp; // 0..1
     }
 }
