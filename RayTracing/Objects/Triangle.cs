@@ -13,16 +13,21 @@ namespace RayTracing.Objects
         public Vector3 B { get; set; }
         public Vector3 C { get; set; }
 
-        public Vector3 Color { get; set; }
+        public Vector3 EdgeAB { get; set; }
+        public Vector3 EdgeAC { get; set; }
+        public Vector3 NormalUnit;
 
-        public Triangle() { }
+        public Vector3 Color { get; set; }
 
         public Triangle(Vector3 a, Vector3 b, Vector3 c, Vector3 color)
         {
             A = a;
             B = b;
             C = c;
-            Color = color;
+            Color = color; 
+            EdgeAB = B - A; 
+            EdgeAC = C - A;
+            NormalUnit = Vector3.Normalize(Vector3.Cross(EdgeAB, EdgeAC));
         }
     }
 }

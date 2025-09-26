@@ -13,7 +13,9 @@ namespace RayTracing.Objects
         public Vector3 SideVector1 { get; set; }
         public Vector3 SideVector2 { get; set; }
         public Vector3 Color { get; set; }
-        public Rectangle() { }
+
+        public Triangle[] Triangles { get; set; }
+        public Sphere[] Vertices { get; set; }
 
         public Rectangle(Vector3 corner, Vector3 sideVector1, Vector3 sideVector2, Vector3 color)
         {
@@ -21,9 +23,11 @@ namespace RayTracing.Objects
             SideVector1 = sideVector1;
             SideVector2 = sideVector2;
             Color = color;
+            Triangles = ToTriangles(false);
+            Vertices = ToSpheres();
         }
 
-        public List<Sphere> ToSpheres()
+        private Sphere[] ToSpheres()
         {
             var Color2 = new Vector3(1, 1, 1);
             var radius = 0.01;
@@ -31,7 +35,7 @@ namespace RayTracing.Objects
             return [.. FromCornerAndSides(Corner, SideVector1, SideVector2).Select(x => new Sphere(radius, x, Color2))];
         }
 
-        public static Vector3[] FromCornerAndSides(Vector3 corner, Vector3 u, Vector3 v, bool orthogonalize = true)
+        private static Vector3[] FromCornerAndSides(Vector3 corner, Vector3 u, Vector3 v, bool orthogonalize = true)
         {
             if (orthogonalize)
             {
@@ -47,12 +51,12 @@ namespace RayTracing.Objects
             return [p0, p1, p2, p3];
         }
 
-        public List<Triangle> ToTriangles(bool twoTone = false)
+        private Triangle[] ToTriangles(bool twoTone = false)
         {
             var Color2 = Color * 0.5f;
 
             var corners = FromCornerAndSides(Corner, SideVector1, SideVector2);
-            var triangles = new List<Triangle>
+            var triangles = new Triangle[]
             {
                 new(corners[0], corners[1], corners[2], Color),
                 new(corners[1], corners[2], corners[3], twoTone ? Color2 : Color),

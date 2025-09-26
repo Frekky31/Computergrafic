@@ -26,7 +26,7 @@ namespace RayTracing.Core
             Raylib.SetTextureFilter(texture, TextureFilter.Point);
 
             Color[] texColBuffer = new Color[target.Width * target.Height * 4];
-            Raylib_cs.Rectangle src = new(0, texture.Height, texture.Width, -texture.Height);
+            Rectangle src = new(0, texture.Height, texture.Width, -texture.Height);
             Vector2 origin = new(0, 0);
             bool firstFrameDrawn = false;
 
@@ -41,7 +41,7 @@ namespace RayTracing.Core
                     ToFlatByteArray(target, texColBuffer);
                     Raylib.UpdateTexture(texture, texColBuffer);
 
-                    Raylib_cs.Rectangle dest = new(0, 0, Raylib.GetScreenWidth(), Raylib.GetScreenHeight());
+                    Rectangle dest = new(0, 0, Raylib.GetScreenWidth(), Raylib.GetScreenHeight());
                     Raylib.BeginDrawing();
                     Raylib.DrawTexturePro(texture, src, dest, origin, 0.0f, Color.White);
                     Raylib.EndDrawing();

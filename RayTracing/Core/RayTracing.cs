@@ -6,30 +6,46 @@ using System.Linq;
 using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
+using static System.Formats.Asn1.AsnWriter;
 
 namespace RayTracing.Core
 {
     public class RayTracing
     {
-        public static void Render(RenderTarget target, Scene Scene)
+        public static void Render(RenderTarget target, Scene scene)
         {
+            int width = target.Width;
+            int height = target.Height;
+            
+            var cam = scene.Camera;
+            Vector3 f = Vector3.Normalize(cam.LookAt - cam.Position);
+            Vector3 r = Vector3.Normalize(Vector3.Cross(cam.Up, f));
+            Vector3 u = Vector3.Normalize(Vector3.Cross(r, f));
+
+            float scale = MathF.Tan(cam.Fov * MathF.PI / 360f);
+            float aspect = width / (float)height;
+            float invW = 1f / width;
+            float invH = 1f / height;
             Parallel.For(0, target.Height, y =>
             {
-                for (int x = 0; x < target.Width; x++)
+                float py = 1 - 2 * ((y + 0.5f) * invH);
+                for (int x = 0; x < width; x++)
                 {
-                    int index = y * target.Width + x;
+                    int index = y * width + x;
 
-                    Vector2 pixel = new((2 * ((x + 0.5f) / target.Width) - 1) * (target.Width / (float)target.Height), 1 - 2 * ((y + 0.5f) / target.Height));
+                    float px = (2 * ((x + 0.5f) * invW) - 1) * aspect;
 
-                    var (o, d) = CreateEyeRay(Scene.Camera, pixel);
-                    var hit = FindClosestHitPoint(Scene, o, d);
-                    if (hit != null && hit.DidHit)
+                    Vector3 d = f + (py * scale) * u + (px * scale) * r;
+                    d = Vector3.Normalize(d);
+                    Vector3 o = cam.Position;
+
+                    if (FindClosestHitPoint(scene, o, d, out HitPoint? hit))
                     {
-                        target.ColourBuffer[index] = ComputeColor(Scene, o, d, hit);
+                        target.ColourBuffer[index] = hit?.Color ?? Vector3.Zero;
                     }
                     else
                     {
-                        target.ColourBuffer[index] = new Vector3(0f, 0f, 0f);
+                        target.ColourBuffer[index] = Vector3.Zero;
                     }
                 }
             });
@@ -49,88 +65,83 @@ namespace RayTracing.Core
             return (camera.Position, d);
         }
 
-        private static HitPoint? FindClosestHitPoint(Scene s, Vector3 o, Vector3 d)
+        private static bool FindClosestHitPoint(in Scene s, in Vector3 o, in Vector3 d, out HitPoint? hit)
         {
-            List<HitPoint> hits = [];
+            float closest = float.PositiveInfinity;
+            HitPoint? best = default;
+            bool found = false;
+
             foreach (var sphere in s.Spheres)
             {
-                hits.AddRange(SphereRay(o,d,sphere));
+                if (SphereRay(o, d, sphere, out var dist))
+                {
+                    if (dist < closest)
+                    {
+                        closest = dist;
+                        best = new HitPoint { DidHit=true, Color=sphere.Color, Distance=dist };
+                        found = true;
+                    }
+                }
             }
 
             foreach (var triangle in s.Triangles)
             {
-                hits.AddRange(TriangleRay(o, d, triangle));
+                if (TriangleRay(o, d, triangle, out var dist))
+                {
+                    if (dist < closest)
+                    {
+                        closest = dist;
+                        best = new HitPoint { DidHit = true, Color = triangle.Color, Distance = dist };
+                        found = true;
+                    }
+                }
             }
 
-            if (hits.Count > 0)
-            {
-                hits.Sort((a, b) => a.Distance.CompareTo(b.Distance));
-                return hits[0];
-            }
-            return null;
+            hit = best;
+
+            return found;
         }
 
-        private static List<HitPoint> SphereRay(Vector3 o, Vector3 d, Sphere sphere)
+        private static bool SphereRay(in Vector3 o, in Vector3 d, in Sphere sphere, out float t)
         {
-            List<HitPoint> hits = [];
-            Vector3 oc = o - sphere.center;
+            Vector3 oc = o - sphere.Center;
             float b = 2.0f * Vector3.Dot(oc, d);
-            float c = Vector3.Dot(oc, oc) - (float)(sphere.radius * sphere.radius);
+            float c = Vector3.Dot(oc, oc) - (float)(sphere.Radius * sphere.Radius);
             float discriminant = b * b - 4 * c;
 
             if (discriminant < 0)
-                return [];
-
-            float t1 = (-b - (float)Math.Sqrt(discriminant)) / 2.0f;
-            float t2 = (-b + (float)Math.Sqrt(discriminant)) / 2.0f;
-
-            if (t1 > 0)
-                hits.Add(GetHitPoint(o, d, t1, sphere));
-            if (t2 > 0)
-                hits.Add(GetHitPoint(o, d, t2, sphere));
-            return hits;
-        }
-
-        private static List<HitPoint> TriangleRay(Vector3 o, Vector3 d, Triangle triangle)
-        {
-            List<HitPoint> hits = [];
-            Vector3 edgeAB = triangle.B - triangle.A;
-            Vector3 edgeAC = triangle.C - triangle.A;
-
-            Vector3 normalVector = Vector3.Cross(edgeAB, edgeAC); 
-            Vector3 ao = o - triangle.A;
-            Vector3 dao = Vector3.Cross(ao, d);
-
-            float determinant = -Vector3.Dot(d, normalVector);
-            if (MathF.Abs(determinant) < 1e-8f) return hits;
-            float invDet = 1f / determinant;
-
-            float dst = Vector3.Dot(ao, normalVector) * invDet;
-            float u = Vector3.Dot(edgeAC, dao) * invDet;
-            float v = -Vector3.Dot(edgeAB, dao) * invDet;
-            float w = 1 - u - v;
-
-            if (dst > 1e-8f && u >= 0 && v >= 0 && w >= 0)
             {
-                Vector3 hitPoint = o + dst * d;
-                Vector3 normal = Vector3.Normalize(normalVector);
-                hits.Add(new HitPoint { DidHit = true, Distance = dst, Point = hitPoint, Color = triangle.Color, Normal = normal });
+                t = 0;
+                return false;
             }
+            float sqrt = (float)Math.Sqrt(discriminant);
+            float t1 = (-b - sqrt) / 2.0f;
+            float t2 = (-b + sqrt) / 2.0f;
 
-            return hits;
+            t = (t1 > 0f) ? t1 : ((t2 > 0f) ? t2 : 0f);
+            if (t <= 0f) { return false; }
+            return true;
         }
 
-        private static HitPoint GetHitPoint(Vector3 o, Vector3 d, float t, Sphere sphere)
+        private static bool TriangleRay(in Vector3 o, in Vector3 d, in Triangle tri, out float t)
         {
-            Vector3 hitPoint = o + t * d;
-            Vector3 normal = Vector3.Normalize(hitPoint - sphere.center);
-            return new HitPoint { DidHit = true, Distance = t, Point = hitPoint, Color = sphere.color, Normal = normal };
-        }
+            const float EPS = 1e-8f;
 
+            Vector3 pvec = Vector3.Cross(d, tri.EdgeAC);
+            float det = Vector3.Dot(tri.EdgeAB, pvec);
 
-        private static Vector3 ComputeColor(Scene scene, Vector3 o, Vector3 d, HitPoint hit)
-        {
-            return hit.Color;
+            float invDet = 1f / det;
+            Vector3 tvec = o - tri.A;
+
+            float u = Vector3.Dot(tvec, pvec) * invDet;
+            if (u < 0f || u > 1f) { t = 0f; return false; }
+
+            Vector3 qvec = Vector3.Cross(tvec, tri.EdgeAB);
+            float v = Vector3.Dot(d, qvec) * invDet;
+            if (v < 0f || u + v > 1f) { t = 0f; return false; }
+
+            t = Vector3.Dot(tri.EdgeAC, qvec) * invDet;
+            return t > EPS;
         }
     }
 }
