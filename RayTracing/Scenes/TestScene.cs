@@ -8,7 +8,9 @@ namespace RayTracing.Objects
     {
         Camera camera = new(new(0, 0, -5), new(0, 0, 6), new(0, 1, 0), 36);
         Camera cameraPart2 = new(new(-0.9f, -0.5f, 0.9f), new(0, 0, 0), new(0, 1, 0), 110);
-        Camera cameraDolly = new(new(0, 0, -1.5f), new(0, 0, 6), new(0, 1, 0), 140);
+        
+        Camera cameraTop = new(new(-0.75f, 0.3f, 0f), new(-0.2f, 0f, 0f), new(0, 1, 0), 68);
+        Camera cameraDolly = new(new(0, 0, -1f), new(0, 0, 6), new(0, 1, 0), 140);
         Camera cameraCube = new(new(-0.6f, -0.95f, -2f), new(0.25f, -0.75f, -1f), new(0, 1, 0), 50);
 
         Camera cameraM = new(new(0, 0, -5), new(0, 0, 6), new(0, 1, 0), 36);
@@ -32,6 +34,7 @@ namespace RayTracing.Objects
             var sphH = new Sphere(0.05, new Vector3(0.5f, 0.1f, -0.5f), new Vector3(0.1f, 0.1f, 0.1f));
 
             Cube cube = new(new Vector3(0.25f, -0.75f, -1f), new Vector3(0.25f, 0.5f, 0.25f), new Vector3(0.2f, 0.3f, 0.2f));
+            cube.Rotate(Quaternion.CreateFromAxisAngle(new Vector3(1, 0, 0), MathF.PI / 6));
 
             Rectangle wallLeft = new(new(-1, -1, 1), new(0f, 2f, 0f), new(0, 0, -20), new(0.7f, 0.07f, 0.03f));
             Rectangle wallRight = new(new(1, -1, 1), new(0f, 2f, 0f), new(0, 0, -20), new(0.09f, 0.04f, 0.7f));
@@ -39,7 +42,8 @@ namespace RayTracing.Objects
             Rectangle floor = new(new(-1, -1, 1), new(2f, 0f, 0f), new(0, 0, -20), new(0.8f, 0.8f, 0.8f));
             Rectangle ceiling = new(new(-1, 1, 1), new(2f, 0f, 0f), new(0, 0, -20), new(0.8f, 0.8f, 0.8f));
 
-            Spheres.AddRange(cube.Vertices);
+            //Spheres.AddRange(cube.Vertices);
+            
             Spheres.AddRange(
             [
                 //new Sphere(1000, new Vector3(-1001, 0, 0), new Vector3(0.7f, 0.07f, 0.03f)),
@@ -50,7 +54,7 @@ namespace RayTracing.Objects
 
                 new Sphere(0.3, new Vector3(-0.6f, -0.7f, -0.6f), new Vector3(0.78f, 0.76f, 0.1f)),
                 new Sphere(0.6, new Vector3(0.3f, -0.4f, 0.3f), new Vector3(0.04f, 0.4f, 0.7f)),
-                //new Sphere(0.8, new Vector3(-0.8f, 0.8f, 0.8f), new Vector3(0.85f, 0.55f, 0.03f)),
+                new Sphere(0.8, new Vector3(-0.8f, 0.8f, 0.8f), new Vector3(0.85f, 0.55f, 0.03f)),
                 animatedSphere,
 
                 //sphA,
@@ -67,7 +71,7 @@ namespace RayTracing.Objects
             Triangles.AddRange(wallLeft.Triangles);
             Triangles.AddRange(wallRight.Triangles);
             Triangles.AddRange(wallBack.Triangles);
-            Triangles.AddRange(ceiling.Triangles); 
+            Triangles.AddRange(ceiling.Triangles);
             Triangles.AddRange(floor.Triangles);
             Triangles.AddRange(
             [
@@ -83,7 +87,11 @@ namespace RayTracing.Objects
 
 
             Camera = cameraM;
-            cameras = [camera, cameraCube, cameraPart2, cameraDolly];
+            
+            Camera camera1 = new(new(-5, 5, 0), new(0, 0, 0), new(0, 1, 0), 36);
+            Camera camera2 = new(new(0, 0, 5), new(0, 0, 0), new(0, 1, 0), 36);
+            Camera camera3 = new(new(5, -5, 0), new(0, 0, 0), new(0, 1, 0), 36);
+            cameras = [cameraDolly, camera, cameraCube, cameraTop, cameraPart2];
         }
 
 
@@ -97,7 +105,7 @@ namespace RayTracing.Objects
 
             if (CameraScene)
             {
-                CameraBlend blend = GetCameraBlend(elapsedTime, 3f, 8f, cameras.Count);
+                CameraBlend blend = GetCameraBlend(elapsedTime, 3f, 4f, cameras.Count);
                 cameraM.Position = Vector3.Lerp(cameras[blend.fromIndex].Position, cameras[blend.toIndex].Position, blend.lerp);
                 cameraM.LookAt = Vector3.Lerp(cameras[blend.fromIndex].LookAt, cameras[blend.toIndex].LookAt, blend.lerp);
                 cameraM.Fov = (1 - blend.lerp) * cameras[blend.fromIndex].Fov + blend.lerp * cameras[blend.toIndex].Fov;

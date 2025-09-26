@@ -16,4 +16,14 @@
     <PackageReference Include="Raylib-cs" Version="7.0.1" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Meshes\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="Meshes\TestObject.obj">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>

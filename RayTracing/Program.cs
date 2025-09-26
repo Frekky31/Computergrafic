@@ -6,6 +6,7 @@ using System.Linq;
 using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows;
 
 namespace RayTracing
 {
@@ -13,9 +14,12 @@ namespace RayTracing
     {
         static void Main(string[] args)
         {
-            RenderTarget renderTarget = new(600, 600);
+            float aspectRatio = 16f / 9f;
+            int width = 1080;
+            int height = (int)(width / aspectRatio);
+            RenderTarget renderTarget = new(width, height);
 
-            Engine.Run(renderTarget, new TestScene(true, true), true);
+            Engine.Run(renderTarget, new TestScene(true, false), true);
         }
     }
 }

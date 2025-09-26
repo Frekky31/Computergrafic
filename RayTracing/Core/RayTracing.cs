@@ -4,6 +4,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
+using System.Runtime.CompilerServices;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using static System.Formats.Asn1.AsnWriter;
@@ -16,7 +18,8 @@ namespace RayTracing.Core
         {
             int width = target.Width;
             int height = target.Height;
-            
+            int pixelCount = width * height;
+
             var cam = scene.Camera;
             Vector3 f = Vector3.Normalize(cam.LookAt - cam.Position);
             Vector3 r = Vector3.Normalize(Vector3.Cross(cam.Up, f));
@@ -26,43 +29,28 @@ namespace RayTracing.Core
             float aspect = width / (float)height;
             float invW = 1f / width;
             float invH = 1f / height;
-            Parallel.For(0, target.Height, y =>
+
+            Parallel.For(0, pixelCount, i =>
             {
+                int y = i / width;
+                int x = i % width;
+
                 float py = 1 - 2 * ((y + 0.5f) * invH);
-                for (int x = 0; x < width; x++)
+                float px = (2 * ((x + 0.5f) * invW) - 1) * aspect;
+
+                Vector3 d = f + (py * scale) * u + (px * scale) * r;
+                d = Vector3.Normalize(d);
+                Vector3 o = cam.Position;
+
+                if (FindClosestHitPoint(scene, o, d, out HitPoint? hit))
                 {
-                    int index = y * width + x;
-
-                    float px = (2 * ((x + 0.5f) * invW) - 1) * aspect;
-
-                    Vector3 d = f + (py * scale) * u + (px * scale) * r;
-                    d = Vector3.Normalize(d);
-                    Vector3 o = cam.Position;
-
-                    if (FindClosestHitPoint(scene, o, d, out HitPoint? hit))
-                    {
-                        target.ColourBuffer[index] = hit?.Color ?? Vector3.Zero;
-                    }
-                    else
-                    {
-                        target.ColourBuffer[index] = Vector3.Zero;
-                    }
+                    target.ColourBuffer[i] = hit?.Color ?? Vector3.Zero;
+                }
+                else
+                {
+                    target.ColourBuffer[i] = Vector3.Zero;
                 }
             });
-        }
-
-        private static (Vector3 o, Vector3 d) CreateEyeRay(Camera camera, Vector2 pixel)
-        {
-            Vector3 f = Vector3.Normalize(camera.LookAt - camera.Position);
-            Vector3 r = Vector3.Normalize(Vector3.Cross(camera.Up, f));
-            Vector3 u = Vector3.Normalize(Vector3.Cross(r, f));
-            float scale = (float)Math.Tan(camera.Fov * MathF.PI / 180f / 2);
-            float beta = scale * pixel.Y;
-            float omega = scale * pixel.X;
-
-            Vector3 d = Vector3.Normalize(f + beta * u + omega * r);
-
-            return (camera.Position, d);
         }
 
         private static bool FindClosestHitPoint(in Scene s, in Vector3 o, in Vector3 d, out HitPoint? hit)
@@ -78,7 +66,9 @@ namespace RayTracing.Core
                     if (dist < closest)
                     {
                         closest = dist;
-                        best = new HitPoint { DidHit=true, Color=sphere.Color, Distance=dist };
+                        Vector3 p = o + dist * d;
+                        var normal = Vector3.Normalize(p - sphere.Center);
+                        best = new HitPoint { DidHit = true, Color = sphere.Color, Distance = dist, Point = p, Normal = normal};
                         found = true;
                     }
                 }
@@ -91,7 +81,7 @@ namespace RayTracing.Core
                     if (dist < closest)
                     {
                         closest = dist;
-                        best = new HitPoint { DidHit = true, Color = triangle.Color, Distance = dist };
+                        best = new HitPoint { DidHit = true, Color = triangle.Color, Distance = dist, Point = o + dist * d, Normal= triangle.NormalUnit };
                         found = true;
                     }
                 }

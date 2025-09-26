@@ -12,6 +12,7 @@ namespace RayTracing.Objects
         public Vector3 Center { get; set; }
         public Vector3 Scale { get; set; }
         public Vector3 Color { get; set; }
+        public Quaternion Rotation { get; set; } = Quaternion.Identity;
         public Triangle[] Triangles { get; set; }
         public Sphere[] Vertices { get; set; }
 
@@ -20,22 +21,44 @@ namespace RayTracing.Objects
             Center = center;
             Scale = scale;
             Color = color;
-            Triangles = ToTriangles(true);
+            Rotation = Quaternion.Identity;
+            Triangles = ToTriangles(false);
+            Vertices = ToSpheres();
+        }
+
+        public void Rotate(Quaternion rotation)
+        {
+            Rotation = rotation * Rotation;
+            Triangles = ToTriangles(false);
+            Vertices = ToSpheres();
+        }
+
+        public void Move(Vector3 translation)
+        {
+            Center += translation;
+            Triangles = ToTriangles(false);
             Vertices = ToSpheres();
         }
 
         private Vector3[] GetPoints()
         {
             var halfScale = Scale / 2; 
-            var p0 = Center + new Vector3(-halfScale.X, -halfScale.Y, -halfScale.Z);
-            var p1 = Center + new Vector3(halfScale.X, -halfScale.Y, -halfScale.Z);
-            var p2 = Center + new Vector3(halfScale.X, halfScale.Y, -halfScale.Z);
-            var p3 = Center + new Vector3(-halfScale.X, halfScale.Y, -halfScale.Z);
-            var p4 = Center + new Vector3(-halfScale.X, -halfScale.Y, halfScale.Z);
-            var p5 = Center + new Vector3(halfScale.X, -halfScale.Y, halfScale.Z);
-            var p6 = Center + new Vector3(halfScale.X, halfScale.Y, halfScale.Z);
-            var p7 = Center + new Vector3(-halfScale.X, halfScale.Y, halfScale.Z);
-            return [p0, p1, p2, p3, p4, p5, p6, p7];
+            var localPoints = new Vector3[]
+            {
+                new(-halfScale.X, -halfScale.Y, -halfScale.Z),
+                new(halfScale.X, -halfScale.Y, -halfScale.Z),
+                new(halfScale.X, halfScale.Y, -halfScale.Z),
+                new(-halfScale.X, halfScale.Y, -halfScale.Z),
+                new(-halfScale.X, -halfScale.Y, halfScale.Z),
+                new(halfScale.X, -halfScale.Y, halfScale.Z),
+                new(halfScale.X, halfScale.Y, halfScale.Z),
+                new(-halfScale.X, halfScale.Y, halfScale.Z)
+            };
+            for (int i = 0; i < localPoints.Length; i++)
+            {
+                localPoints[i] = Vector3.Transform(localPoints[i], Rotation) + Center;
+            }
+            return localPoints;
         }
 
         private Sphere[] ToSpheres()
