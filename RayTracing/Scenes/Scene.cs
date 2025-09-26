@@ -1,6 +1,8 @@
-﻿using System.Numerics;
+﻿using RayTracing.Core;
+using RayTracing.Objects;
+using System.Numerics;
 
-namespace RayTracing.Objects
+namespace RayTracing.Scenes
 {
     public abstract class Scene
     {

@@ -1,4 +1,5 @@
 ﻿using RayTracing.Objects;
+using RayTracing.Scenes;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -95,24 +96,21 @@ namespace RayTracing.Core
             List<HitPoint> hits = [];
             Vector3 edgeAB = triangle.B - triangle.A;
             Vector3 edgeAC = triangle.C - triangle.A;
-            // For left-handed, Z-up: cross product order and up direction must be considered.
-            // Z-up: up = (0, 0, 1), left-handed: cross order is reversed.
-            Vector3 normalVector = Vector3.Cross(edgeAB, edgeAC); // reverse order for left-handed
+
+            Vector3 normalVector = Vector3.Cross(edgeAB, edgeAC); 
             Vector3 ao = o - triangle.A;
-            Vector3 dao = Vector3.Cross(ao, d); // reverse order for left-handed
+            Vector3 dao = Vector3.Cross(ao, d);
 
-            float determinant = -Vector3.Dot(normalVector, d); // no sign flip for left-handed
-            if (Math.Abs(determinant) < 1e-8f)
-                return hits;
+            float determinant = -Vector3.Dot(d, normalVector);
+            if (MathF.Abs(determinant) < 1e-8f) return hits;
+            float invDet = 1f / determinant;
 
-            float invDet = 1.0f / determinant;
-
-            float dst = Vector3.Dot(normalVector, ao) * invDet;
-            float u = Vector3.Dot(Vector3.Cross(d, edgeAC), ao) * invDet;
-            float v = Vector3.Dot(Vector3.Cross(edgeAB, d), ao) * invDet;
+            float dst = Vector3.Dot(ao, normalVector) * invDet;
+            float u = Vector3.Dot(edgeAC, dao) * invDet;
+            float v = -Vector3.Dot(edgeAB, dao) * invDet;
             float w = 1 - u - v;
 
-            if (determinant > 1e-8f && dst > 1e-8f && u >= 0 && v >= 0 && w >= 0)
+            if (dst > 1e-8f && u >= 0 && v >= 0 && w >= 0)
             {
                 Vector3 hitPoint = o + dst * d;
                 Vector3 normal = Vector3.Normalize(normalVector);

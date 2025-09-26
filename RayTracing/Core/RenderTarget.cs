@@ -6,7 +6,7 @@ using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace RayTracing.Objects
+namespace RayTracing.Core
 {
     public class RenderTarget(int w, int h)
     {

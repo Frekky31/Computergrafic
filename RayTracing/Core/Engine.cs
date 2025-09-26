@@ -1,5 +1,5 @@
 ﻿using Raylib_cs;
-using RayTracing.Objects;
+using RayTracing.Scenes;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -8,40 +8,54 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media.Imaging;
+using System.Windows.Media.TextFormatting;
 
 namespace RayTracing.Core
 {
     public class Engine
     {
 
-        public static void Run(RenderTarget target, Scene scene)
+        public static void Run(RenderTarget target, Scene scene, bool run = false)
         {
-            Raylib.InitWindow(800, 800, "Ray Tracing");
+            Raylib.SetConfigFlags(ConfigFlags.VSyncHint | ConfigFlags.ResizableWindow);
+            Raylib.InitWindow(target.Width, target.Height, "Ray Tracing");
 
-            Texture2D texture = Raylib.LoadTextureFromImage(Raylib.GenImageColor(target.Width, target.Height, Color.Black));
+            Image img = Raylib.GenImageColor(target.Width, target.Height, Color.Black);
+            Texture2D texture = Raylib.LoadTextureFromImage(img);
+            Raylib.UnloadImage(img);
             Raylib.SetTextureFilter(texture, TextureFilter.Point);
+
             Color[] texColBuffer = new Color[target.Width * target.Height * 4];
+            Raylib_cs.Rectangle src = new(0, texture.Height, texture.Width, -texture.Height);
+            Vector2 origin = new(0, 0);
+            bool firstFrameDrawn = false;
 
             while (!Raylib.WindowShouldClose())
             {
-                scene.Update(target, Raylib.GetFrameTime());
+                if (Raylib.IsWindowResized() || run || !firstFrameDrawn)
+                {
+                    if (run)
+                        scene.Update(target, Raylib.GetFrameTime());
 
-                RayTracing.Render(target, scene);
+                    RayTracing.Render(target, scene);
+                    ToFlatByteArray(target, texColBuffer);
+                    Raylib.UpdateTexture(texture, texColBuffer);
 
+                    Raylib_cs.Rectangle dest = new(0, 0, Raylib.GetScreenWidth(), Raylib.GetScreenHeight());
+                    Raylib.BeginDrawing();
+                    Raylib.DrawTexturePro(texture, src, dest, origin, 0.0f, Color.White);
+                    Raylib.EndDrawing();
 
-                Raylib.UpdateTexture(texture, texColBuffer);
-                ToFlatByteArray(target, texColBuffer);
-
-                Rectangle src = new(0, texture.Height, texture.Width, -texture.Height);
-                Rectangle dest = new(0, 0, Raylib.GetScreenWidth(), Raylib.GetScreenHeight());
-                Vector2 origin = new(0, 0);
-
-                Raylib.BeginDrawing();
-                Raylib.DrawTexturePro(texture, src, dest, origin, 0.0f, Color.White);
-                Raylib.DrawFPS(10, 10);
-                Raylib.EndDrawing();
+                    firstFrameDrawn = true;
+                }
+                else
+                {
+                    Raylib.PollInputEvents();
+                    Raylib.WaitTime(0.05f);
+                }
             }
 
+            Raylib.UnloadTexture(texture);
             Raylib.CloseWindow();
         }
 
