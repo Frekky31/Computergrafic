@@ -7,42 +7,42 @@ using System.Threading.Tasks;
 
 namespace RayTracing.Objects
 {
-    public class Cube
+    public class Cube : RenderObject
     {
         public Vector3 Center { get; set; }
-        public Vector3 Scale { get; set; }
+        public Vector3 Size { get; set; }
         public Vector3 Color { get; set; }
         public Quaternion Rotation { get; set; } = Quaternion.Identity;
         public Triangle[] Triangles { get; set; }
         public Sphere[] Vertices { get; set; }
 
-        public Cube(Vector3 center, Vector3 scale, Vector3 color)
+        public Cube(Vector3 center, Vector3 size, Vector3 color)
         {
             Center = center;
-            Scale = scale;
+            Size = size;
             Color = color;
             Rotation = Quaternion.Identity;
-            Triangles = ToTriangles(false);
+            Triangles = ToTriangles(true);
             Vertices = ToSpheres();
         }
 
-        public void Rotate(Quaternion rotation)
+        public override void Rotate(Quaternion rotation)
         {
             Rotation = rotation * Rotation;
-            Triangles = ToTriangles(false);
+            Triangles = ToTriangles(true);
             Vertices = ToSpheres();
         }
 
-        public void Move(Vector3 translation)
+        public override void Move(Vector3 translation)
         {
             Center += translation;
-            Triangles = ToTriangles(false);
+            Triangles = ToTriangles(true);
             Vertices = ToSpheres();
         }
 
         private Vector3[] GetPoints()
         {
-            var halfScale = Scale / 2; 
+            var halfScale = Size / 2; 
             var localPoints = new Vector3[]
             {
                 new(-halfScale.X, -halfScale.Y, -halfScale.Z),
@@ -86,36 +86,52 @@ namespace RayTracing.Objects
         private Triangle[] ToTriangles(bool twoTone = false)
         {
             var Color2 = Color * 0.5f;
-            var points = GetPoints();
+            var p = GetPoints();
 
             var triangles = new Triangle[]
             {
-                // Bottom face (-Z)
-                new(points[0], points[1], points[2], Color),
-                new(points[0], points[2], points[3], twoTone ? Color2 : Color),
+                // Bottom face (Y = -halfScale.Y)
+                new(p[0], p[5], p[1], Color),
+                new(p[0], p[4], p[5], twoTone ? Color2 : Color),
 
-                // Top face (+Z)
-                new(points[4], points[6], points[5], Color),
-                new(points[4], points[7], points[6], twoTone ? Color2 : Color),
+                // Top face (Y = +halfScale.Y)
+                new(p[3], p[6], p[7], Color),
+                new(p[3], p[2], p[6], twoTone ? Color2 : Color),
 
-                // Front face (+Y)
-                new(points[3], points[2], points[6], Color),
-                new(points[3], points[6], points[7], twoTone ? Color2 : Color),
+                // Front face (Z = +halfScale.Z)
+                new(p[4], p[6], p[5], Color),
+                new(p[4], p[7], p[6], twoTone ? Color2 : Color),
 
-                // Back face (-Y)
-                new(points[0], points[5], points[1], Color),
-                new(points[0], points[4], points[5], twoTone ? Color2 : Color),
+                // Back face (Z = -halfScale.Z)
+                new(p[0], p[2], p[3], Color),
+                new(p[0], p[1], p[2], twoTone ? Color2 : Color),
 
-                // Right face (+X)
-                new(points[1], points[5], points[6], Color),
-                new(points[1], points[6], points[2], twoTone ? Color2 : Color),
+                // Right face (X = +halfScale.X)
+                new(p[1], p[6], p[2], Color),
+                new(p[1], p[5], p[6], twoTone ? Color2 : Color),
 
-                // Left face (-X)
-                new(points[0], points[3], points[7], Color),
-                new(points[0], points[7], points[4], twoTone ? Color2 : Color),
+                // Left face (X = -halfScale.X)
+                new(p[0], p[7], p[4], Color),
+                new(p[0], p[3], p[7], twoTone ? Color2 : Color),
             };
-
             return triangles;
+        }
+
+        public override Span<Triangle> GetTriangles()
+        {
+            return Triangles;
+        }
+
+        public override Span<Sphere> GetSpheres()
+        {
+            return Vertices;
+        }
+
+        public override void Scale(float scale)
+        {
+            Size *= scale;
+            Triangles = ToTriangles(true);
+            Vertices = ToSpheres();
         }
     }
 }

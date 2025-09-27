@@ -76,6 +76,9 @@ namespace RayTracing.Core
 
             foreach (var triangle in s.Triangles)
             {
+                if (Vector3.Dot(d, triangle.NormalUnit) >= 0f)
+                    continue;
+
                 if (TriangleRay(o, d, triangle, out var dist))
                 {
                     if (dist < closest)
@@ -119,6 +122,8 @@ namespace RayTracing.Core
 
             Vector3 pvec = Vector3.Cross(d, tri.EdgeAC);
             float det = Vector3.Dot(tri.EdgeAB, pvec);
+
+            if (det > -EPS && det < EPS) { t = 0f; return false; }
 
             float invDet = 1f / det;
             Vector3 tvec = o - tri.A;

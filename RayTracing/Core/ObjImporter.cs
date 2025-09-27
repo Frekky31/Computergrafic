@@ -12,15 +12,17 @@ namespace RayTracing.Core
 {
     public static class ObjImporter
     {
-        public static (List<Triangle> triangles, List<Vector3> positions) LoadObj(string path, Vector3 color)
+        public static Mesh LoadObj(string path, Vector3 color, bool forceFlipWinding = false)
         {
             var positionsRaw = new List<Vector3>();   // OBJ "v"
             var normalsRaw = new List<Vector3>();   // OBJ "vn"
             var uvsRaw = new List<Vector2>();   // OBJ "vt" (optional)
+
             var triangles = new List<Triangle>();
+            var vertices = new List<Vector3>();
 
             // Axis remap: Blender (X right, Y forward, Z up) -> Engine (X right, Y up, Z forward)
-            static Vector3 TransformPos(Vector3 v) => new Vector3(v.X, v.Z, -v.Y);
+            static Vector3 TransformPos(Vector3 v) => new(v.X, v.Z, -v.Y);
             static Vector3 TransformDir(Vector3 n) => Vector3.Normalize(new Vector3(n.X, n.Z, -n.Y)); // for normals
 
             // Determine if transform flips handedness (reflection) to fix winding automatically
@@ -28,8 +30,7 @@ namespace RayTracing.Core
             Vector3 ty = TransformDir(Vector3.UnitY);
             Vector3 tz = TransformDir(Vector3.UnitZ);
             bool flipWinding = Vector3.Dot(Vector3.Cross(tx, ty), tz) < 0f;  // true for (x, z, -y)
-
-            var trianglesOutPositions = new List<Vector3>(); // transformed positions list to return (debug/usage)
+            if (forceFlipWinding) flipWinding = !flipWinding;
 
             var inv = CultureInfo.InvariantCulture;
             foreach (var raw in File.ReadLines(path))
@@ -93,27 +94,27 @@ namespace RayTracing.Core
                         Vector3 B = TransformPos(positionsRaw[ib]);
                         Vector3 C = TransformPos(positionsRaw[ic]);
 
-                        // Fix winding if the transform flips handedness
+                        // Fix winding if needed
                         if (flipWinding)
+                        {
                             (B, C) = (C, B);
-
-                        // Optional: use per-vertex normals if present to ensure consistent facing
-                        // (Not needed for flat shading, but helpful if your Triangle ctor uses vn)
-                        // Vector3 nA = (vnIdx[0] >= 0)      ? TransformDir(normalsRaw[vnIdx[0]])      : Vector3.Zero;
-                        // Vector3 nB = (vnIdx[i] >= 0)      ? TransformDir(normalsRaw[vnIdx[i]])      : Vector3.Zero;
-                        // Vector3 nC = (vnIdx[i+1] >= 0)    ? TransformDir(normalsRaw[vnIdx[i+1]])    : Vector3.Zero;
+                            (ib, ic) = (ic, ib);
+                        }
 
                         triangles.Add(new Triangle(A, B, C, counter % 2 == 0 ? color : color2));
                         counter++;
-                        // If you still want a transformed vertex list to return:
-                        trianglesOutPositions.Add(A);
-                        trianglesOutPositions.Add(B);
-                        trianglesOutPositions.Add(C);
+
+                        // Collect unique vertices for sphere representation
+                        vertices.Add(A);
+                        vertices.Add(B);
+                        vertices.Add(C);
                     }
                 }
             }
-
-            return (triangles, trianglesOutPositions);
+            
+            var mesh = new Mesh(triangles.ToArray(), vertices.ToArray());
+            mesh.Rotate(Quaternion.CreateFromAxisAngle(new Vector3(1,0,0), MathF.PI / 2));
+            return mesh;
 
             // ---- helpers ----
             static int ParseInt(string s) => int.Parse(s, NumberStyles.Integer, CultureInfo.InvariantCulture);

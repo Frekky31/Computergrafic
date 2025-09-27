@@ -33,13 +33,13 @@ namespace RayTracing.Objects
             var sphG = new Sphere(0.05, new Vector3(0.5f, 0.9f, -0.5f), new Vector3(0.5f, 0.5f, 0.5f));
             var sphH = new Sphere(0.05, new Vector3(0.5f, 0.1f, -0.5f), new Vector3(0.1f, 0.1f, 0.1f));
 
-            Cube cube = new(new Vector3(0.25f, -0.75f, -1f), new Vector3(0.25f, 0.5f, 0.25f), new Vector3(0.2f, 0.3f, 0.2f));
-            cube.Rotate(Quaternion.CreateFromAxisAngle(new Vector3(1, 0, 0), MathF.PI / 6));
+            Cube cube = new(new Vector3(0, -0.8f, -0.6f), new Vector3(0.25f, 0.5f, 0.25f), new Vector3(0.2f, 0.3f, 0.2f));
+            //cube.Rotate(Quaternion.CreateFromAxisAngle(new Vector3(1, 0, 0), MathF.PI / 6));
 
             Rectangle wallLeft = new(new(-1, -1, 1), new(0f, 2f, 0f), new(0, 0, -20), new(0.7f, 0.07f, 0.03f));
-            Rectangle wallRight = new(new(1, -1, 1), new(0f, 2f, 0f), new(0, 0, -20), new(0.09f, 0.04f, 0.7f));
-            Rectangle wallBack = new(new(-1, -1, 1), new(0f, 2f, 0f), new(2, 0, 0), new(0.09f, 0.7f, 0.02f));
-            Rectangle floor = new(new(-1, -1, 1), new(2f, 0f, 0f), new(0, 0, -20), new(0.8f, 0.8f, 0.8f));
+            Rectangle wallRight = new(new(1, 1, 1), new(0f, -2f, 0f), new(0, 0, -20), new(0.09f, 0.04f, 0.7f));
+            Rectangle wallBack = new(new(-1, 1, 1), new(0f, -2f, 0f), new(2, 0, 0), new(0.09f, 0.7f, 0.02f));
+            Rectangle floor = new(new(1, -1, 1), new(-2f, 0f, 0f), new(0, 0, -20), new(0.8f, 0.8f, 0.8f));
             Rectangle ceiling = new(new(-1, 1, 1), new(2f, 0f, 0f), new(0, 0, -20), new(0.8f, 0.8f, 0.8f));
 
             //Spheres.AddRange(cube.Vertices);
@@ -54,8 +54,8 @@ namespace RayTracing.Objects
 
                 new Sphere(0.3, new Vector3(-0.6f, -0.7f, -0.6f), new Vector3(0.78f, 0.76f, 0.1f)),
                 new Sphere(0.6, new Vector3(0.3f, -0.4f, 0.3f), new Vector3(0.04f, 0.4f, 0.7f)),
-                new Sphere(0.8, new Vector3(-0.8f, 0.8f, 0.8f), new Vector3(0.85f, 0.55f, 0.03f)),
-                animatedSphere,
+                new Sphere(0.8, new Vector3(0f, 1.6f, 0f), new Vector3(0.85f, 0.55f, 0.03f)),
+                //animatedSphere,
 
                 //sphA,
                 //sphB,
@@ -73,9 +73,18 @@ namespace RayTracing.Objects
             Triangles.AddRange(wallBack.Triangles);
             Triangles.AddRange(ceiling.Triangles);
             Triangles.AddRange(floor.Triangles);
+
+            var mesh = ObjImporter.LoadObj("Meshes/TestObject.obj", new(0.5f, 0.5f, 0.5f));
+            var ring = ObjImporter.LoadObj("Meshes/Ring.obj", new(0.7f, 0.7f, 0.7f), true);
+            mesh.Scale(0.2f);
+            mesh.Move(new Vector3(0, -0.8f, -0.6f));
+            ring.Scale(0.2f);
+            ring.Move(new Vector3(0, -0.2f, -0.6f));
+            Triangles.AddRange(mesh.Triangles);
+            Triangles.AddRange(ring.Triangles);
             Triangles.AddRange(
             [
-                //new Triangle(sphA.center, sphB.center, sphC.center, new Vector3(0.1f, 0.5f, 0.1f)),
+                //new Triangle(sphA.Center, sphC.Center, sphB.Center, new Vector3(0.1f, 0.5f, 0.1f)),
                 //new Triangle(sphC.center, sphD.center, sphA.center, new Vector3(0.5f, 0.1f, 0.1f)),
                 //new Triangle(sphB.center, sphE.center, sphF.center, new Vector3(0.5f, 0.1f, 0.1f)),
                 //new Triangle(sphF.center, sphC.center, sphB.center, new Vector3(0.5f, 0.1f, 0.1f)),
@@ -92,6 +101,7 @@ namespace RayTracing.Objects
             Camera camera2 = new(new(0, 0, 5), new(0, 0, 0), new(0, 1, 0), 36);
             Camera camera3 = new(new(5, -5, 0), new(0, 0, 0), new(0, 1, 0), 36);
             cameras = [cameraDolly, camera, cameraCube, cameraTop, cameraPart2];
+            //cameras = [camera, camera1, camera2, camera3];
         }
 
 
@@ -153,7 +163,7 @@ namespace RayTracing.Objects
             float cycleDuration = segmentDuration * cameraCount;
             float tCycle = elapsedTime % cycleDuration;
 
-            int segmentIndex = (int)System.Math.Floor(tCycle / segmentDuration);
+            int segmentIndex = (int)Math.Floor(tCycle / segmentDuration);
             int fromIndex = segmentIndex % cameraCount;
             int toIndex = (fromIndex + 1) % cameraCount;
 

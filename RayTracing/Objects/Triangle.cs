@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace RayTracing.Objects
 {
-    public class Triangle
+    public class Triangle : RenderObject
     {
         public Vector3 A { get; set; }
         public Vector3 B { get; set; }
@@ -24,10 +24,51 @@ namespace RayTracing.Objects
             A = a;
             B = b;
             C = c;
-            Color = color; 
-            EdgeAB = B - A; 
+            Color = color;
+            EdgeAB = B - A;
             EdgeAC = C - A;
-            NormalUnit = Vector3.Normalize(Vector3.Cross(EdgeAB, EdgeAC));
+            NormalUnit = -Vector3.Normalize(Vector3.Cross(EdgeAB, EdgeAC));
+        }
+
+        public override Span<Triangle> GetTriangles()
+        {
+            Triangle[] triangles = [this];
+            return new Span<Triangle>(triangles);
+        }
+
+        public override Span<Sphere> GetSpheres()
+        {
+            return [];
+        }
+
+        public override void Move(Vector3 translation)
+        {
+            A += translation;
+            B += translation;
+            C += translation;
+            EdgeAB = B - A;
+            EdgeAC = C - A;
+            NormalUnit = -Vector3.Normalize(Vector3.Cross(EdgeAB, EdgeAC));
+        }
+
+        public override void Rotate(Quaternion rotation)
+        {
+            A = Vector3.Transform(A, rotation);
+            B = Vector3.Transform(B, rotation);
+            C = Vector3.Transform(C, rotation);
+            EdgeAB = B - A;
+            EdgeAC = C - A;
+            NormalUnit = -Vector3.Normalize(Vector3.Cross(EdgeAB, EdgeAC));
+        }
+
+        public override void Scale(float scale)
+        {
+            A *= scale;
+            B *= scale;
+            C *= scale;
+            EdgeAB = B - A;
+            EdgeAC = C - A;
+            NormalUnit = -Vector3.Normalize(Vector3.Cross(EdgeAB, EdgeAC));
         }
     }
 }

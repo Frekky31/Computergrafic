@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace RayTracing.Objects
 {
-    public class Rectangle
+    public class Rectangle : RenderObject
     {
         public Vector3 Corner { get; set; }
         public Vector3 SideVector1 { get; set; }
@@ -59,10 +59,43 @@ namespace RayTracing.Objects
             var triangles = new Triangle[]
             {
                 new(corners[0], corners[1], corners[2], Color),
-                new(corners[1], corners[2], corners[3], twoTone ? Color2 : Color),
+                new(corners[1], corners[3], corners[2], twoTone ? Color2 : Color), // fixed winding
             };
 
             return triangles;
+        }
+
+        public override Span<Triangle> GetTriangles()
+        {
+            return Triangles;
+        }
+
+        public override Span<Sphere> GetSpheres()
+        {
+            return Vertices;
+        }
+
+        public override void Move(Vector3 translation)
+        {
+            Corner += translation;
+            Triangles = ToTriangles(false);
+            Vertices = ToSpheres();
+        }
+
+        public override void Rotate(Quaternion rotation)
+        {
+            SideVector1 = Vector3.Transform(SideVector1, rotation);
+            SideVector2 = Vector3.Transform(SideVector2, rotation);
+            Triangles = ToTriangles(false);
+            Vertices = ToSpheres();
+        }
+
+        public override void Scale(float scale)
+        {
+            SideVector1 *= scale;
+            SideVector2 *= scale;
+            Triangles = ToTriangles(false);
+            Vertices = ToSpheres();
         }
     }
 }
