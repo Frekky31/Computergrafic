@@ -19,7 +19,7 @@ namespace RayTracing
             int height = (int)(width / aspectRatio);
             RenderTarget renderTarget = new(width, height);
 
-            Engine.Run(renderTarget, new TestScene(true, false), true);
+            Engine.Run(renderTarget, new CatScene(false, false), false);
         }
     }
 }

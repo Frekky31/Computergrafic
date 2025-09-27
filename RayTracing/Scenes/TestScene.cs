@@ -1,4 +1,5 @@
 ﻿using System.Numerics;
+using System.Reflection.Metadata.Ecma335;
 using RayTracing.Core;
 using RayTracing.Scenes;
 
@@ -8,7 +9,7 @@ namespace RayTracing.Objects
     {
         Camera camera = new(new(0, 0, -5), new(0, 0, 6), new(0, 1, 0), 36);
         Camera cameraPart2 = new(new(-0.9f, -0.5f, 0.9f), new(0, 0, 0), new(0, 1, 0), 110);
-        
+
         Camera cameraTop = new(new(-0.75f, 0.3f, 0f), new(-0.2f, 0f, 0f), new(0, 1, 0), 68);
         Camera cameraDolly = new(new(0, 0, -1f), new(0, 0, 6), new(0, 1, 0), 140);
         Camera cameraCube = new(new(-0.6f, -0.95f, -2f), new(0.25f, -0.75f, -1f), new(0, 1, 0), 50);
@@ -16,7 +17,7 @@ namespace RayTracing.Objects
         Camera cameraM = new(new(0, 0, -5), new(0, 0, 6), new(0, 1, 0), 36);
         Sphere animatedSphere = new(0.1, new Vector3(0.3f, -0.4f, -1f), new Vector3(0.5f, 0.05f, 0.07f));
         List<Camera> cameras;
-
+        Mesh cat = ObjImporter.LoadObj("Meshes/cat.obj", new(0.95f, 0.48f, 0.78f), true);
         bool CameraScene = false;
         bool Animation = false;
 
@@ -43,7 +44,7 @@ namespace RayTracing.Objects
             Rectangle ceiling = new(new(-1, 1, 1), new(2f, 0f, 0f), new(0, 0, -20), new(0.8f, 0.8f, 0.8f));
 
             //Spheres.AddRange(cube.Vertices);
-            
+
             Spheres.AddRange(
             [
                 //new Sphere(1000, new Vector3(-1001, 0, 0), new Vector3(0.7f, 0.07f, 0.03f)),
@@ -51,10 +52,10 @@ namespace RayTracing.Objects
                 //new Sphere(1000, new Vector3(0, 0, 1001), new Vector3(0.4f, 0.4f, 0.4f)),
                 //new Sphere(1000, new Vector3(0, -1001, 0), new Vector3(0.6f, 0.6f, 0.6f)),
                 //new Sphere(1000, new Vector3(0, 1001, 0), new Vector3(0.8f, 0.8f, 0.8f)),
-
-                new Sphere(0.3, new Vector3(-0.6f, -0.7f, -0.6f), new Vector3(0.78f, 0.76f, 0.1f)),
-                new Sphere(0.6, new Vector3(0.3f, -0.4f, 0.3f), new Vector3(0.04f, 0.4f, 0.7f)),
-                new Sphere(0.8, new Vector3(0f, 1.6f, 0f), new Vector3(0.85f, 0.55f, 0.03f)),
+                
+                //new Sphere(0.3, new Vector3(-0.6f, -0.7f, -0.6f), new Vector3(0.78f, 0.76f, 0.1f)),
+                //new Sphere(0.6, new Vector3(0.3f, -0.4f, 0.3f), new Vector3(0.04f, 0.4f, 0.7f)),
+                //new Sphere(0.8, new Vector3(0f, 1.6f, 0f), new Vector3(0.85f, 0.55f, 0.03f)),
                 //animatedSphere,
 
                 //sphA,
@@ -67,7 +68,7 @@ namespace RayTracing.Objects
                 //sphH,
             ]);
 
-            Triangles.AddRange(cube.Triangles);
+            //Triangles.AddRange(cube.Triangles);
             Triangles.AddRange(wallLeft.Triangles);
             Triangles.AddRange(wallRight.Triangles);
             Triangles.AddRange(wallBack.Triangles);
@@ -80,8 +81,12 @@ namespace RayTracing.Objects
             mesh.Move(new Vector3(0, -0.8f, -0.6f));
             ring.Scale(0.2f);
             ring.Move(new Vector3(0, -0.2f, -0.6f));
-            Triangles.AddRange(mesh.Triangles);
-            Triangles.AddRange(ring.Triangles);
+            cat.Move(new Vector3(100f, -150.8f, 0.2f));
+            cat.Rotate(Quaternion.CreateFromAxisAngle(new Vector3(0, 1, 0), MathF.PI / 6));
+            cat.Scale(0.003f);
+            //Triangles.AddRange(mesh.Triangles);
+            //Triangles.AddRange(ring.Triangles);
+            Triangles.AddRange(cat.Triangles);
             Triangles.AddRange(
             [
                 //new Triangle(sphA.Center, sphC.Center, sphB.Center, new Vector3(0.1f, 0.5f, 0.1f)),
@@ -96,7 +101,7 @@ namespace RayTracing.Objects
 
 
             Camera = cameraM;
-            
+
             Camera camera1 = new(new(-5, 5, 0), new(0, 0, 0), new(0, 1, 0), 36);
             Camera camera2 = new(new(0, 0, 5), new(0, 0, 0), new(0, 1, 0), 36);
             Camera camera3 = new(new(5, -5, 0), new(0, 0, 0), new(0, 1, 0), 36);
@@ -140,6 +145,11 @@ namespace RayTracing.Objects
                 var center = animatedSphere.Center;
                 center.X = newX;
                 animatedSphere.Center = center;
+
+                // Rotate the cat mesh 360 degrees over 4 seconds
+                float rotationSpeed = MathF.PI * 2f / 4f; // 360 degrees in 4 seconds
+                float angle = elapsedTime * rotationSpeed;
+                cat.Rotate(Quaternion.CreateFromAxisAngle(new Vector3(0, 1, 0), angle));
             }
         }
         public static CameraBlend GetCameraBlend(

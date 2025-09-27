@@ -17,10 +17,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Meshes\" />
-  </ItemGroup>
-
-  <ItemGroup>
+    <None Update="Meshes\cat.obj">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="Meshes\Ring.obj">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
