@@ -14,7 +14,7 @@ namespace RayTracing.Objects
         Camera cameraRight = new(new(5, 3, 0), new(0.25f, -0.25f, -1f), new(0, 1, 0), 36);
 
         Camera cameraM = new(new(0, 0, -5), new(0, 0, 6), new(0, 1, 0), 36);
-        Sphere animatedSphere;
+        Sphere animatedSphere = new Sphere(0.1, new Vector3(0.3f, -0.4f, -1f), new(new(0.7f, 0.07f, 0.03f), Vector3.Zero, Vector3.Zero));
         List<Camera> cameras;
 
         bool CameraScene = false;
@@ -24,37 +24,36 @@ namespace RayTracing.Objects
         {
             CameraScene = cameraScene;
             Animation = animation;
-            var sphA = new Sphere(0.05, new Vector3(0.5f, 0.9f, -1f), new Vector3(1f, 1f, 1f));
-            var sphB = new Sphere(0.05, new Vector3(0.9f, 0.9f, -1f), new Vector3(0.5f, 0.5f, 0.5f));
-            var sphC = new Sphere(0.05, new Vector3(0.9f, 0.1f, -1f), new Vector3(0.1f, 0.1f, 0.1f));
-            var sphD = new Sphere(0.05, new Vector3(0.5f, 0.1f, -1f), new Vector3(0.1f, 0.1f, 0.1f));
-            var sphE = new Sphere(0.05, new Vector3(0.9f, 0.9f, -0.5f), new Vector3(0.5f, 0.5f, 0.5f));
-            var sphF = new Sphere(0.05, new Vector3(0.9f, 0.1f, -0.5f), new Vector3(0.1f, 0.1f, 0.1f));
-            var sphG = new Sphere(0.05, new Vector3(0.5f, 0.9f, -0.5f), new Vector3(0.5f, 0.5f, 0.5f));
-            var sphH = new Sphere(0.05, new Vector3(0.5f, 0.1f, -0.5f), new Vector3(0.1f, 0.1f, 0.1f));
+            //var sphA = new Sphere(0.05, new Vector3(0.5f, 0.9f, -1f), new Vector3(1f, 1f, 1f));
+            //var sphB = new Sphere(0.05, new Vector3(0.9f, 0.9f, -1f), new Vector3(0.5f, 0.5f, 0.5f));
+            //var sphC = new Sphere(0.05, new Vector3(0.9f, 0.1f, -1f), new Vector3(0.1f, 0.1f, 0.1f));
+            //var sphD = new Sphere(0.05, new Vector3(0.5f, 0.1f, -1f), new Vector3(0.1f, 0.1f, 0.1f));
+            //var sphE = new Sphere(0.05, new Vector3(0.9f, 0.9f, -0.5f), new Vector3(0.5f, 0.5f, 0.5f));
+            //var sphF = new Sphere(0.05, new Vector3(0.9f, 0.1f, -0.5f), new Vector3(0.1f, 0.1f, 0.1f));
+            //var sphG = new Sphere(0.05, new Vector3(0.5f, 0.9f, -0.5f), new Vector3(0.5f, 0.5f, 0.5f));
+            //var sphH = new Sphere(0.05, new Vector3(0.5f, 0.1f, -0.5f), new Vector3(0.1f, 0.1f, 0.1f));
 
-            Cube cube = new(new Vector3(0.25f, -0.75f, -1f), new Vector3(0.25f, 0.25f, 0.25f), new Vector3(0.2f, 0.3f, 0.2f));
+            //Cube cube = new(new Vector3(0.25f, -0.75f, -1f), new Vector3(0.25f, 0.25f, 0.25f), new Vector3(0.2f, 0.3f, 0.2f));
+            
+            
+            Rectangle wallLeft = new(new(-1, -1, -1), new(0f, 2f, 0f), new(0, 0, 10), new(new(0.7f, 0.07f, 0.03f), Vector3.Zero, Vector3.Zero));
+            Rectangle wallRight = new(new(1, -1, 1), new(0f, 2f, 0f), new(0, 0, -10), new(new(0.09f, 0.04f, 0.7f), Vector3.Zero, Vector3.Zero));
+            Rectangle wallBack = new(new(-1, -1, 1), new(0f, 2f, 0f), new(2, 0, 0), new(new(0.09f, 0.7f, 0.02f), Vector3.Zero, Vector3.Zero));
+            Rectangle floor = new(new(-1, -1, 1), new(2f, 0f, 0f), new(0, 0, -10), new(new(0.6f, 0.6f, 0.6f), Vector3.Zero, Vector3.Zero));
+            Rectangle ceiling = new(new(-1, 1, 1), new(2f, 0f, 0f), new(0, 0, -10), new(new(0.6f, 0.6f, 0.6f), new(1,1,1), Vector3.Zero));
 
-            Rectangle wallLeft = new(new(-1, -1, 1), new(0f, 2f, 0f), new(0, 0, -10), new(0.7f, 0.07f, 0.03f));
-            Rectangle wallRight = new(new(1, -1, 1), new(0f, 2f, 0f), new(0, 0, -10), new(0.09f, 0.04f, 0.7f));
-            Rectangle wallBack = new(new(-1, -1, 1), new(0f, 2f, 0f), new(2, 0, 0), new(0.09f, 0.7f, 0.02f));
-            Rectangle floor = new(new(-1, -1, 1), new(2f, 0f, 0f), new(0, 0, -10), new(0.6f, 0.6f, 0.6f));
-            Rectangle ceiling = new(new(-1, 1, 1), new(2f, 0f, 0f), new(0, 0, -10), new(0.6f, 0.6f, 0.6f));
-            animatedSphere = new Sphere(0.1, new Vector3(0.3f, -0.4f, -1f), new Vector3(0.5f, 0.05f, 0.07f));
-
-            Spheres.AddRange(cube.ToSpheres());
+            //Spheres.AddRange(cube.ToSpheres());
             Spheres.AddRange(
             [
-                //new Sphere(1000, new Vector3(-1001, 0, 0), new Vector3(0.7f, 0.07f, 0.03f)),
-                //new Sphere(1000, new Vector3(1001, 0, 0), new Vector3(0.09f, 0.04f, 0.7f)),
-                //new Sphere(1000, new Vector3(0, 0, 1001), new Vector3(0.4f, 0.4f, 0.4f)),
-                //new Sphere(1000, new Vector3(0, -1001, 0), new Vector3(0.6f, 0.6f, 0.6f)),
-                //new Sphere(1000, new Vector3(0, 1001, 0), new Vector3(0.8f, 0.8f, 0.8f)),
-
-                new Sphere(0.3, new Vector3(-0.6f, -0.7f, -0.6f), new Vector3(0.78f, 0.76f, 0.1f)),
-                new Sphere(0.6, new Vector3(0.3f, -0.4f, 0.3f), new Vector3(0.04f, 0.4f, 0.7f)),
-                new Sphere(0.8, new Vector3(-0.8f, 0.8f, 0.8f), new Vector3(0.85f, 0.55f, 0.03f)),
-                animatedSphere,
+                new Sphere(1000, new Vector3(-1001, 0, 0), wallLeft.Material),
+                new Sphere(1000, new Vector3(1001, 0, 0), wallRight.Material),
+                new Sphere(1000, new Vector3(0, 0, 1001), wallBack.Material),
+                new Sphere(1000, new Vector3(0, -1001, 0), floor.Material),
+                new Sphere(1000, new Vector3(0, 1001, 0), ceiling.Material),
+                new Sphere(0.3, new Vector3(-0.6f, -0.7f, -0.6f), new(new(0.78f, 0.76f, 0.1f), Vector3.Zero, new(0.78f, 0.76f, 0.1f), 0.5f)),
+                new Sphere(0.6, new Vector3(0.3f, -0.4f, 0.3f), new(new(0.04f, 0.4f, 0.7f), Vector3.Zero, new(0.04f, 0.4f, 0.7f), 0.5f)),
+                //new Sphere(0.8, new Vector3(-0.8f, 0.8f, 0.8f), new Vector3(0.85f, 0.55f, 0.03f)),
+                //animatedSphere,
 
                 //sphA,
                 //sphB,
@@ -66,12 +65,12 @@ namespace RayTracing.Objects
                 //sphH,
             ]);
 
-            Triangles.AddRange(cube.ToTriangles(true));
-            Triangles.AddRange(wallLeft.ToTriangles());
-            Triangles.AddRange(wallRight.ToTriangles());
-            Triangles.AddRange(wallBack.ToTriangles());
-            Triangles.AddRange(ceiling.ToTriangles()); 
-            Triangles.AddRange(floor.ToTriangles());
+            //Triangles.AddRange(cube.ToTriangles(true));
+            //Triangles.AddRange(wallLeft.ToTriangles());
+            //Triangles.AddRange(wallRight.ToTriangles());
+            //Triangles.AddRange(wallBack.ToTriangles());
+            //Triangles.AddRange(ceiling.ToTriangles()); 
+            //Triangles.AddRange(floor.ToTriangles());
             Triangles.AddRange(
             [
                 //new Triangle(sphA.center, sphB.center, sphC.center, new Vector3(0.1f, 0.5f, 0.1f)),
@@ -109,7 +108,7 @@ namespace RayTracing.Objects
             if (Animation)
             {
                 float speed = 0.5f;
-                float newX = animatedSphere.center.X + speed * delta * mult;
+                float newX = animatedSphere.Center.X + speed * delta * mult;
                 if (newX > 0.8f)
                 {
                     newX = 0.8f;
@@ -121,10 +120,9 @@ namespace RayTracing.Objects
                     mult = 1;
                 }
 
-                // Directly modify the X component of the existing center vector
-                var center = animatedSphere.center;
+                var center = animatedSphere.Center;
                 center.X = newX;
-                animatedSphere.center = center;
+                animatedSphere.Center = center;
             }
         }
         public static CameraBlend GetCameraBlend(
@@ -135,14 +133,14 @@ namespace RayTracing.Objects
         {
             if (cameraCount <= 0) return new CameraBlend { fromIndex = -1, toIndex = -1, lerp = 0f };
 
-            if (transitionTime <= 0f) // instant cut, only linger
-                transitionTime = 0.000001f; // avoid div-by-zero; treat as nearly instant
+            if (transitionTime <= 0f)
+                transitionTime = 0.000001f;
 
             if (lingerTime < 0f) lingerTime = 0f;
             if (elapsedTime < 0f) elapsedTime = 0f;
 
             float segmentDuration = transitionTime + lingerTime;
-            if (segmentDuration <= 0f) // degenerate: no time passes, stick to first camera
+            if (segmentDuration <= 0f)
                 return new CameraBlend { fromIndex = 0, toIndex = (cameraCount > 1 ? 1 % cameraCount : 0), lerp = 1f };
 
             float cycleDuration = segmentDuration * cameraCount;
@@ -156,7 +154,7 @@ namespace RayTracing.Objects
 
             float lerp = tInSegment < transitionTime
                 ? tInSegment / transitionTime
-                : 1f; // linger phase
+                : 1f;
 
             return new CameraBlend { fromIndex = fromIndex, toIndex = toIndex, lerp = lerp };
         }
@@ -167,6 +165,6 @@ namespace RayTracing.Objects
     {
         public int fromIndex;
         public int toIndex;
-        public float lerp; // 0..1
+        public float lerp;
     }
 }

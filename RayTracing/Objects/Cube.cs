@@ -11,13 +11,13 @@ namespace RayTracing.Objects
     {
         public Vector3 Center { get; set; }
         public Vector3 Scale { get; set; }
-        public Vector3 Color { get; set; }
+        public Material Material { get; set; } = new();
         public Cube() { }
-        public Cube(Vector3 center, Vector3 scale, Vector3 color)
+        public Cube(Vector3 center, Vector3 scale, Material material)
         {
             Center = center;
             Scale = scale;
-            Color = color;
+            Material = material;
         }
 
         public List<Sphere> ToSpheres()
@@ -36,14 +36,14 @@ namespace RayTracing.Objects
 
             var spheres = new List<Sphere>
             {
-                new(radius,p0,Color2),
-                new(radius,p1,Color2),
-                new(radius,p2,Color2),
-                new(radius,p3,Color2),
-                new(radius,p4,Color2),
-                new(radius,p5,Color2),
-                new(radius,p6,Color2),
-                new(radius,p7,Color2)
+                new(radius,p0,new(Color2, Vector3.Zero, Vector3.Zero)),
+                new(radius,p1,new(Color2, Vector3.Zero, Vector3.Zero)),
+                new(radius,p2,new(Color2, Vector3.Zero, Vector3.Zero)),
+                new(radius,p3,new(Color2, Vector3.Zero, Vector3.Zero)),
+                new(radius,p4,new(Color2, Vector3.Zero, Vector3.Zero)),
+                new(radius,p5,new(Color2, Vector3.Zero, Vector3.Zero)),
+                new(radius,p6,new(Color2, Vector3.Zero, Vector3.Zero)),
+                new(radius,p7,new(Color2, Vector3.Zero, Vector3.Zero))
             };
 
             return spheres;
@@ -51,7 +51,6 @@ namespace RayTracing.Objects
 
         public List<Triangle> ToTriangles(bool twoTone = false)
         {
-            var Color2 = Color * 0.5f;
             var halfScale = Scale / 2;
             var p0 = Center + new Vector3(-halfScale.X, -halfScale.Y, -halfScale.Z);
             var p1 = Center + new Vector3(halfScale.X, -halfScale.Y, -halfScale.Z);
@@ -65,28 +64,28 @@ namespace RayTracing.Objects
             var triangles = new List<Triangle>
             {
                 // Bottom face (-Z)
-                new(p0, p1, p2, Color),
-                new(p0, p2, p3, twoTone ? Color2 : Color),
+                new(p0, p1, p2, Material),
+                new(p0, p2, p3, Material),
 
                 // Top face (+Z)
-                new(p4, p6, p5, Color),
-                new(p4, p7, p6, twoTone ? Color2 : Color),
+                new(p4, p6, p5, Material    ),
+                new(p4, p7, p6, Material),
 
                 // Front face (+Y)
-                new(p3, p2, p6, Color),
-                new(p3, p6, p7, twoTone ? Color2 : Color),
+                new(p3, p2, p6, Material),
+                new(p3, p6, p7, Material),
 
                 // Back face (-Y)
-                new(p0, p5, p1, Color),
-                new(p0, p4, p5, twoTone ? Color2 : Color),
+                new(p0, p5, p1, Material),
+                new(p0, p4, p5, Material),
 
                 // Right face (+X)
-                new(p1, p5, p6, Color),
-                new(p1, p6, p2, twoTone ? Color2 : Color),
+                new(p1, p5, p6, Material),
+                new(p1, p6, p2, Material),
 
                 // Left face (-X)
-                new(p0, p3, p7, Color),
-                new(p0, p7, p4, twoTone ? Color2 : Color),
+                new(p0, p3, p7, Material),
+                new(p0, p7, p4, Material),
             };
 
             return triangles;

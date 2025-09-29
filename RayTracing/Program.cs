@@ -15,7 +15,7 @@ namespace RayTracing
         {
             RenderTarget renderTarget = new(600, 600);
 
-            Engine.Run(renderTarget, new TestScene(true, true), true);
+            Engine.Run(renderTarget, new TestScene(false, false), false);
         }
     }
 }

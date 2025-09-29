@@ -9,16 +9,17 @@ namespace RayTracing.Objects
 {
     public class Sphere
     {
-        public double radius { get; set; }
-        public Vector3 center { get; set; }
-        public Vector3 color { get; set; }
+        public double Radius { get; set; }
+        public Vector3 Center { get; set; }
+        public Material Material { get; set; } = new();
 
         public Sphere() { }
-        public Sphere(double radius, Vector3 center, Vector3 color)
+
+        public Sphere(double radius, Vector3 center, Material material)
         {
-            this.radius = radius;
-            this.center = center;
-            this.color = color;
+            Radius = radius;
+            Center = center;
+            Material = material;
         }
     }
 }

@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -11,26 +12,21 @@ namespace RayTracing.Core
 {
     public class RayTracing
     {
-        public static void Render(RenderTarget target, Scene Scene)
+        Random rnd = new Random();
+        const float kEps = 1e-4f;
+        public void Render(RenderTarget target, Scene Scene)
         {
             Parallel.For(0, target.Height, y =>
             {
+                var py = 1 - 2 * ((y + 0.5f) / target.Height);
                 for (int x = 0; x < target.Width; x++)
                 {
                     int index = y * target.Width + x;
 
-                    Vector2 pixel = new((2 * ((x + 0.5f) / target.Width) - 1) * (target.Width / (float)target.Height), 1 - 2 * ((y + 0.5f) / target.Height));
+                    Vector2 pixel = new((2 * ((x + 0.5f) / target.Width) - 1) * (target.Width / (float)target.Height), py);
 
                     var (o, d) = CreateEyeRay(Scene.Camera, pixel);
-                    var hit = FindClosestHitPoint(Scene, o, d);
-                    if (hit != null && hit.DidHit)
-                    {
-                        target.ColourBuffer[index] = ComputeColor(Scene, o, d, hit);
-                    }
-                    else
-                    {
-                        target.ColourBuffer[index] = new Vector3(0f, 0f, 0f);
-                    }
+                    target.ColourBuffer[index] = ComputeColor(Scene, o, d);
                 }
             });
         }
@@ -54,7 +50,7 @@ namespace RayTracing.Core
             List<HitPoint> hits = [];
             foreach (var sphere in s.Spheres)
             {
-                hits.AddRange(SphereRay(o,d,sphere));
+                hits.AddRange(SphereRay(o, d, sphere));
             }
 
             foreach (var triangle in s.Triangles)
@@ -73,9 +69,9 @@ namespace RayTracing.Core
         private static List<HitPoint> SphereRay(Vector3 o, Vector3 d, Sphere sphere)
         {
             List<HitPoint> hits = [];
-            Vector3 oc = o - sphere.center;
+            Vector3 oc = o - sphere.Center;
             float b = 2.0f * Vector3.Dot(oc, d);
-            float c = Vector3.Dot(oc, oc) - (float)(sphere.radius * sphere.radius);
+            float c = Vector3.Dot(oc, oc) - (float)(sphere.Radius * sphere.Radius);
             float discriminant = b * b - 4 * c;
 
             if (discriminant < 0)
@@ -97,7 +93,7 @@ namespace RayTracing.Core
             Vector3 edgeAB = triangle.B - triangle.A;
             Vector3 edgeAC = triangle.C - triangle.A;
 
-            Vector3 normalVector = Vector3.Cross(edgeAB, edgeAC); 
+            Vector3 normalVector = Vector3.Cross(edgeAB, edgeAC);
             Vector3 ao = o - triangle.A;
             Vector3 dao = Vector3.Cross(ao, d);
 
@@ -114,7 +110,7 @@ namespace RayTracing.Core
             {
                 Vector3 hitPoint = o + dst * d;
                 Vector3 normal = Vector3.Normalize(normalVector);
-                hits.Add(new HitPoint { DidHit = true, Distance = dst, Point = hitPoint, Color = triangle.Color, Normal = normal });
+                hits.Add(new HitPoint { DidHit = true, Distance = dst, Point = hitPoint, Material = triangle.Material, Normal = normal });
             }
 
             return hits;
@@ -123,14 +119,66 @@ namespace RayTracing.Core
         private static HitPoint GetHitPoint(Vector3 o, Vector3 d, float t, Sphere sphere)
         {
             Vector3 hitPoint = o + t * d;
-            Vector3 normal = Vector3.Normalize(hitPoint - sphere.center);
-            return new HitPoint { DidHit = true, Distance = t, Point = hitPoint, Color = sphere.color, Normal = normal };
+            Vector3 normal = Vector3.Normalize(hitPoint - sphere.Center);
+            return new HitPoint { DidHit = true, Distance = t, Point = hitPoint, Material = sphere.Material, Normal = normal };
         }
 
 
-        private static Vector3 ComputeColor(Scene scene, Vector3 o, Vector3 d, HitPoint hit)
+        private Vector3 ComputeColor(Scene scene, Vector3 o, Vector3 d)
         {
-            return hit.Color;
+            var hit = FindClosestHitPoint(scene, o, d);
+            float p = 0.007f;
+            if (hit == null) return Vector3.Zero;
+
+            if (rnd.NextDouble() < p)
+            {
+                return hit.Material.Emission;
+            }
+
+            Vector3 n = hit.Normal;             // geometric (not smoothed) normal is safest
+            float s = MathF.Sign(Vector3.Dot(wo, n));    // +1 if we’re leaving along the normal, -1 if into it
+            float eps = MathF.Max(kEps, 1e-3f * hit.T);  // scale epsilon by ray length to be robust
+            Vector3 newOrigin = hit.Point + n * (eps * s);
+
+            var rndD = RandomDirection(hit.Normal);
+            var first = (float)(2 * Math.PI / (1 - p));
+            var second = Math.Max(0, Vector3.Dot(rndD, hit.Normal));
+            var brdf = BRDF(d, rndD, hit);
+            var recursion = ComputeColor(scene, hit.Point, rndD);
+            return hit.Material.Emission + first * second * Vector3.Multiply(brdf, recursion);
+        }
+
+        private Vector3 BRDF(Vector3 incoming, Vector3 outgoing, HitPoint hit)
+        {
+            var dRef = Vector3.Reflect(incoming, hit.Normal);
+
+            var diffuse = hit.Material.Diffuse * (float)(1 / Math.PI);
+
+            if (Vector3.Dot(outgoing, dRef) > 1f - hit.Material.SpecularDistance)
+            {
+                return diffuse + hit.Material.Specular * 20;
+            }
+
+            return diffuse;
+        }
+
+        private Vector3 RandomDirection(Vector3 normal)
+        {
+            Vector3 rndD = new Vector3();
+            do
+            {
+                rndD = new(NextFloat(), NextFloat(), NextFloat());
+            } while (rndD.LengthSquared() > 1f);
+            if (Vector3.Dot(rndD, normal) < 0)
+            {
+                rndD = -rndD;
+            }
+            return Vector3.Normalize(rndD);
+        }
+
+        public float NextFloat()
+        {
+            return (float)((rnd.NextDouble() * 2) - 1);
         }
     }
 }

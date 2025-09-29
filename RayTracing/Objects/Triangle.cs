@@ -13,16 +13,16 @@ namespace RayTracing.Objects
         public Vector3 B { get; set; }
         public Vector3 C { get; set; }
 
-        public Vector3 Color { get; set; }
+        public Material Material { get; set; } = new();
 
         public Triangle() { }
 
-        public Triangle(Vector3 a, Vector3 b, Vector3 c, Vector3 color)
+        public Triangle(Vector3 a, Vector3 b, Vector3 c, Material material)
         {
             A = a;
             B = b;
             C = c;
-            Color = color;
+            Material = material;
         }
     }
 }

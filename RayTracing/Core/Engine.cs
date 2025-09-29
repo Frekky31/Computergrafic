@@ -25,6 +25,8 @@ namespace RayTracing.Core
             Raylib.UnloadImage(img);
             Raylib.SetTextureFilter(texture, TextureFilter.Point);
 
+            RayTracing rayTracing = new();
+
             Color[] texColBuffer = new Color[target.Width * target.Height * 4];
             Raylib_cs.Rectangle src = new(0, texture.Height, texture.Width, -texture.Height);
             Vector2 origin = new(0, 0);
@@ -37,7 +39,7 @@ namespace RayTracing.Core
                     if (run)
                         scene.Update(target, Raylib.GetFrameTime());
 
-                    RayTracing.Render(target, scene);
+                    rayTracing.Render(target, scene);
                     ToFlatByteArray(target, texColBuffer);
                     Raylib.UpdateTexture(texture, texColBuffer);
 
@@ -70,6 +72,8 @@ namespace RayTracing.Core
 
         private static int FloatToSrgbByte(float c)
         {
+            c = Math.Clamp(c, 0f, 1f);
+
             c = (float)Math.Pow(c, 1.0 / 2.2);
 
             c = Math.Clamp(c, 0f, 1f);
