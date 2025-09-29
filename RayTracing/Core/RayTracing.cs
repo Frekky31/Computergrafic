@@ -135,20 +135,18 @@ namespace RayTracing.Core
                 return hit.Material.Emission;
             }
 
-            Vector3 n = hit.Normal;             // geometric (not smoothed) normal is safest
-            float s = MathF.Sign(Vector3.Dot(wo, n));    // +1 if we’re leaving along the normal, -1 if into it
-            float eps = MathF.Max(kEps, 1e-3f * hit.T);  // scale epsilon by ray length to be robust
-            Vector3 newOrigin = hit.Point + n * (eps * s);
-
             var rndD = RandomDirection(hit.Normal);
+            var nudge = kEps * hit.Normal;
+            var newOrigin = hit.Point + nudge;
+
             var first = (float)(2 * Math.PI / (1 - p));
             var second = Math.Max(0, Vector3.Dot(rndD, hit.Normal));
             var brdf = BRDF(d, rndD, hit);
-            var recursion = ComputeColor(scene, hit.Point, rndD);
+            var recursion = ComputeColor(scene, newOrigin, rndD);
             return hit.Material.Emission + first * second * Vector3.Multiply(brdf, recursion);
         }
 
-        private Vector3 BRDF(Vector3 incoming, Vector3 outgoing, HitPoint hit)
+        private static Vector3 BRDF(Vector3 incoming, Vector3 outgoing, HitPoint hit)
         {
             var dRef = Vector3.Reflect(incoming, hit.Normal);
 
