@@ -15,9 +15,9 @@ namespace RayTracing.Objects
         Camera cameraCube = new(new(-0.6f, -0.95f, -2f), new(0.25f, -0.75f, -1f), new(0, 1, 0), 50);
 
         Camera cameraM = new(new(0, 0, -5), new(0, 0, 6), new(0, 1, 0), 36);
-        Sphere animatedSphere = new(0.1, new Vector3(0.3f, -0.4f, -1f), new Vector3(0.5f, 0.05f, 0.07f));
+        Sphere animatedSphere = new(0.1f, new Vector3(0.3f, -0.4f, -1f), new(new(0.5f, 0.05f, 0.07f)));
         List<Camera> cameras;
-        Mesh cat = ObjImporter.LoadObj("Meshes/cat.obj", new(0.95f, 0.48f, 0.78f), true);
+        Mesh cat = ObjImporter.LoadObj("Meshes/cat.obj", new(new(0.95f, 0.48f, 0.78f)), true);
         bool CameraScene = false;
         bool Animation = false;
 
@@ -25,25 +25,33 @@ namespace RayTracing.Objects
         {
             CameraScene = cameraScene;
             Animation = animation;
-            var sphA = new Sphere(0.05, new Vector3(0.5f, 0.9f, -1f), new Vector3(1f, 1f, 1f));
-            var sphB = new Sphere(0.05, new Vector3(0.9f, 0.9f, -1f), new Vector3(0.5f, 0.5f, 0.5f));
-            var sphC = new Sphere(0.05, new Vector3(0.9f, 0.1f, -1f), new Vector3(0.1f, 0.1f, 0.1f));
-            var sphD = new Sphere(0.05, new Vector3(0.5f, 0.1f, -1f), new Vector3(0.1f, 0.1f, 0.1f));
-            var sphE = new Sphere(0.05, new Vector3(0.9f, 0.9f, -0.5f), new Vector3(0.5f, 0.5f, 0.5f));
-            var sphF = new Sphere(0.05, new Vector3(0.9f, 0.1f, -0.5f), new Vector3(0.1f, 0.1f, 0.1f));
-            var sphG = new Sphere(0.05, new Vector3(0.5f, 0.9f, -0.5f), new Vector3(0.5f, 0.5f, 0.5f));
-            var sphH = new Sphere(0.05, new Vector3(0.5f, 0.1f, -0.5f), new Vector3(0.1f, 0.1f, 0.1f));
+            var sphA = new Sphere(0.05f, new Vector3(0.5f, 0.9f, -1f), new(new(1f, 1f, 1f)));
+            var sphB = new Sphere(0.05f, new Vector3(0.9f, 0.9f, -1f), new(new(0.5f, 0.5f, 0.5f)));
+            var sphC = new Sphere(0.05f, new Vector3(0.9f, 0.1f, -1f), new(new(0.1f, 0.1f, 0.1f)));
+            var sphD = new Sphere(0.05f, new Vector3(0.5f, 0.1f, -1f), new(new(0.1f, 0.1f, 0.1f)));
+            var sphE = new Sphere(0.05f, new Vector3(0.9f, 0.9f, -0.5f), new(new(0.5f, 0.5f, 0.5f)));
+            var sphF = new Sphere(0.05f, new Vector3(0.9f, 0.1f, -0.5f), new(new(0.1f, 0.1f, 0.1f)));
+            var sphG = new Sphere(0.05f, new Vector3(0.5f, 0.9f, -0.5f), new(new(0.5f, 0.5f, 0.5f)));
+            var sphH = new Sphere(0.05f, new Vector3(0.5f, 0.1f, -0.5f), new(new(0.1f, 0.1f, 0.1f)));
 
-            Cube cube = new(new Vector3(0, -0.8f, -0.6f), new Vector3(0.25f, 0.5f, 0.25f), new Vector3(0.2f, 0.3f, 0.2f));
+            Cube cube = new(new Vector3(0, -0.8f, -0.6f), new Vector3(0.25f, 0.5f, 0.25f), new(new(0.2f, 0.3f, 0.2f)));
             //cube.Rotate(Quaternion.CreateFromAxisAngle(new Vector3(1, 0, 0), MathF.PI / 6));
 
-            Rectangle wallLeft = new(new(-1, -1, 1), new(0f, 2f, 0f), new(0, 0, -20), new(0.7f, 0.07f, 0.03f));
-            Rectangle wallRight = new(new(1, 1, 1), new(0f, -2f, 0f), new(0, 0, -20), new(0.09f, 0.04f, 0.7f));
-            Rectangle wallBack = new(new(-1, 1, 1), new(0f, -2f, 0f), new(2, 0, 0), new(0.09f, 0.7f, 0.02f));
-            Rectangle floor = new(new(1, -1, 1), new(-2f, 0f, 0f), new(0, 0, -20), new(0.8f, 0.8f, 0.8f));
-            Rectangle ceiling = new(new(-1, 1, 1), new(2f, 0f, 0f), new(0, 0, -20), new(0.8f, 0.8f, 0.8f));
+            Material light = new()
+            {
+                Emission = new Vector3(2, 2, 2)
+            };
+
+            Rectangle wallLeft = new(new(-1, -1, 1), new(0f, 2f, 0f), new(0, 0, -20), new(new(0.7f, 0.07f, 0.03f)));
+            Rectangle wallRight = new(new(1, 1, 1), new(0f, -2f, 0f), new(0, 0, -20), new(new(0.09f, 0.04f, 0.7f)));
+            Rectangle wallBack = new(new(-1, 1, 1), new(0f, -2f, 0f), new(2, 0, 0), new(new(0.09f, 0.7f, 0.02f)));
+            Rectangle floor = new(new(1, -1, 1), new(-2f, 0f, 0f), new(0, 0, -20), new(new(0.8f, 0.8f, 0.8f)));
+            Rectangle ceiling = new(new(-1, 1, 1), new(2f, 0f, 0f), new(0, 0, -20), light);
 
             //Spheres.AddRange(cube.Vertices);
+
+            Material m_cube1 = new() { Specular = new(0.78f, 0.76f, 0.1f), Diffuse= new(0.78f, 0.76f, 0.1f), SpecularDistance = 0.01f };
+            Material m_cube2 = new() { Specular = new(0.04f, 0.4f, 0.7f), Diffuse = new(0.04f, 0.4f, 0.7f), SpecularDistance = 0.8f };
 
             Spheres.AddRange(
             [
@@ -53,8 +61,8 @@ namespace RayTracing.Objects
                 //new Sphere(1000, new Vector3(0, -1001, 0), new Vector3(0.6f, 0.6f, 0.6f)),
                 //new Sphere(1000, new Vector3(0, 1001, 0), new Vector3(0.8f, 0.8f, 0.8f)),
                 
-                //new Sphere(0.3, new Vector3(-0.6f, -0.7f, -0.6f), new Vector3(0.78f, 0.76f, 0.1f)),
-                //new Sphere(0.6, new Vector3(0.3f, -0.4f, 0.3f), new Vector3(0.04f, 0.4f, 0.7f)),
+                new Sphere(0.3f, new Vector3(-0.6f, -0.7f, -0.6f), m_cube1),
+                new Sphere(0.6f, new Vector3(0.3f, -0.4f, 0.3f), m_cube2),
                 //new Sphere(0.8, new Vector3(0f, 1.6f, 0f), new Vector3(0.85f, 0.55f, 0.03f)),
                 //animatedSphere,
 
@@ -75,8 +83,8 @@ namespace RayTracing.Objects
             Triangles.AddRange(ceiling.Triangles);
             Triangles.AddRange(floor.Triangles);
 
-            var mesh = ObjImporter.LoadObj("Meshes/TestObject.obj", new(0.5f, 0.5f, 0.5f));
-            var ring = ObjImporter.LoadObj("Meshes/Ring.obj", new(0.7f, 0.7f, 0.7f), true);
+            var mesh = ObjImporter.LoadObj("Meshes/TestObject.obj", new(new(0.5f, 0.5f, 0.5f)));
+            var ring = ObjImporter.LoadObj("Meshes/Ring.obj", new(new(0.7f, 0.7f, 0.7f)), true);
             mesh.Scale(0.2f);
             mesh.Move(new Vector3(0, -0.8f, -0.6f));
             ring.Scale(0.2f);
@@ -86,7 +94,7 @@ namespace RayTracing.Objects
             cat.Scale(0.003f);
             //Triangles.AddRange(mesh.Triangles);
             //Triangles.AddRange(ring.Triangles);
-            Triangles.AddRange(cat.Triangles);
+            //Triangles.AddRange(cat.Triangles);
             Triangles.AddRange(
             [
                 //new Triangle(sphA.Center, sphC.Center, sphB.Center, new Vector3(0.1f, 0.5f, 0.1f)),

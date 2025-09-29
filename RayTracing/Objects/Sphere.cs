@@ -1,4 +1,5 @@
-﻿using System;
+﻿using RayTracing.Core;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
@@ -7,11 +8,17 @@ using System.Threading.Tasks;
 
 namespace RayTracing.Objects
 {
-    public class Sphere(double radius, Vector3 center, Vector3 color) : RenderObject
+    public class Sphere : RenderObject
     {
-        public double Radius { get; set; } = radius;
-        public Vector3 Center { get; set; } = center;
-        public Vector3 Color { get; set; } = color;
+        public float Radius { get; set; }
+        public Vector3 Center { get; set; }
+
+        public Sphere(float radius, Vector3 center, Material material)
+        {
+            Radius = radius;
+            Center = center;
+            Material = material;
+        }
 
         public override Span<Triangle> GetTriangles()
         {

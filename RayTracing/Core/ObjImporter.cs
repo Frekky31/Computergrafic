@@ -12,7 +12,7 @@ namespace RayTracing.Core
 {
     public static class ObjImporter
     {
-        public static Mesh LoadObj(string path, Vector3 color, bool forceFlipWinding = false)
+        public static Mesh LoadObj(string path, Material material, bool forceFlipWinding = false)
         {
             var positionsRaw = new List<Vector3>();   // OBJ "v"
             var normalsRaw = new List<Vector3>();   // OBJ "vn"
@@ -37,7 +37,6 @@ namespace RayTracing.Core
             {
                 var line = raw.Trim();
                 if (line.Length == 0 || line[0] == '#') continue;
-                Vector3 color2 = color * 0.5f;
 
                 if (line.StartsWith("v ", StringComparison.Ordinal))
                 {
@@ -101,7 +100,7 @@ namespace RayTracing.Core
                             (ib, ic) = (ic, ib);
                         }
 
-                        triangles.Add(new Triangle(A, B, C, counter % 2 == 0 ? color : color2));
+                        triangles.Add(new Triangle(A, B, C, material));
                         counter++;
 
                         // Collect unique vertices for sphere representation

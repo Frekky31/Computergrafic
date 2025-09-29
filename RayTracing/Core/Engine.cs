@@ -17,7 +17,6 @@ namespace RayTracing.Core
 
         public static void Run(RenderTarget target, Scene scene, bool run = false)
         {
-            Raylib.SetConfigFlags(ConfigFlags.VSyncHint | ConfigFlags.ResizableWindow);
             Raylib.InitWindow(target.Width, target.Height, "Ray Tracing");
 
             Image img = Raylib.GenImageColor(target.Width, target.Height, Color.Black);
@@ -29,15 +28,16 @@ namespace RayTracing.Core
             Rectangle src = new(0, texture.Height, texture.Width, -texture.Height);
             Vector2 origin = new(0, 0);
             bool firstFrameDrawn = false;
+            RayTracing rayTracer = new();
 
             while (!Raylib.WindowShouldClose())
             {
-                if (Raylib.IsWindowResized() || run || !firstFrameDrawn)
+                if (run || !firstFrameDrawn)
                 {
                     if (run)
                         scene.Update(target, Raylib.GetFrameTime());
 
-                    RayTracing.Render(target, scene);
+                    rayTracer.Render(target, scene);
                     ToFlatByteArray(target, texColBuffer);
                     Raylib.UpdateTexture(texture, texColBuffer);
 

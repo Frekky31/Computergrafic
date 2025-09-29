@@ -9,13 +9,13 @@ namespace RayTracing.Objects
 {
     public class Mesh : RenderObject
     {
+        public Triangle[] Triangles;
+        public Vector3[] Vertices;
         public Mesh(Span<Triangle> triangles, Span<Vector3> vertices)
         {
             Triangles = triangles.ToArray();
             Vertices = vertices.ToArray();
         }
-        public Triangle[] Triangles;
-        public Vector3[] Vertices;
 
         public override void Rotate(Quaternion rotation)
         {
@@ -82,7 +82,7 @@ namespace RayTracing.Objects
 
         public override Span<Sphere> GetSpheres()
         {
-            return Vertices.Select(v => new Sphere(0.01f, v, new Vector3(1, 1, 1))).ToArray();
+            return Vertices.Select(v => new Sphere(0.01f, v, Material)).ToArray();
         }
     }
 }

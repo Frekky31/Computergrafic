@@ -8,18 +8,19 @@ namespace RayTracing.Objects
     public class CatScene : Scene
     {
         Camera cameraM = new(new(0, 0, -5), new(0, 0, 6), new(0, 1, 0), 36);
-        Mesh cat = ObjImporter.LoadObj("Meshes/cat.obj", new(0.95f, 0.48f, 0.78f), true);
+        static Material catMat = new(new(0.95f, 0.48f, 0.78f));
+        Mesh cat = ObjImporter.LoadObj("Meshes/cat.obj", catMat, false);
         bool Animation = false;
 
         public CatScene(bool cameraScene, bool animation)
         {
             Animation = animation;
 
-            Rectangle wallLeft = new(new(-1, -1, 1), new(0f, 2f, 0f), new(0, 0, -20), new(0.67f, 0.07f, 0.03f));
-            Rectangle wallRight = new(new(1, 1, 1), new(0f, -2f, 0f), new(0, 0, -20), new(0.09f, 0.04f, 0.67f));
-            Rectangle wallBack = new(new(-1, 1, 1), new(0f, -2f, 0f), new(2, 0, 0), new(0.09f, 0.6f, 0.02f));
-            Rectangle floor = new(new(1, -1, 1), new(-2f, 0f, 0f), new(0, 0, -20), new(0.6f, 0.6f, 0.6f));
-            Rectangle ceiling = new(new(-1, 1, 1), new(2f, 0f, 0f), new(0, 0, -20), new(0.6f, 0.6f, 0.6f));
+            Rectangle wallLeft = new(new(-1, -1, 1), new(0f, 2f, 0f), new(0, 0, -20), new(new(0.67f, 0.07f, 0.03f)));
+            Rectangle wallRight = new(new(1, 1, 1), new(0f, -2f, 0f), new(0, 0, -20), new(new(0.09f, 0.04f, 0.67f)));
+            Rectangle wallBack = new(new(-1, 1, 1), new(0f, -2f, 0f), new(2, 0, 0), new(new(0.09f, 0.6f, 0.02f)));
+            Rectangle floor = new(new(1, -1, 1), new(-2f, 0f, 0f), new(0, 0, -20), new(new(0.6f, 0.6f, 0.6f)));
+            Rectangle ceiling = new(new(-1, 1, 1), new(2f, 0f, 0f), new(0, 0, -20), new(new(0.6f, 0.6f, 0.6f), new(2,2,2)));
 
             Triangles.AddRange(wallLeft.Triangles);
             Triangles.AddRange(wallRight.Triangles);

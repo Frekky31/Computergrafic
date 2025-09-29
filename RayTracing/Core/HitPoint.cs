@@ -13,7 +13,7 @@ namespace RayTracing.Core
         public float Distance { get; set; }
         public Vector3 Point { get; set; }
         public Vector3 Normal { get; set; }
-        public Vector3 Color { get; set; }
+        public Material Material { get; set; } = new Material();
 
     }
 }

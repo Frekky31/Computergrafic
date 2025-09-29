@@ -1,4 +1,5 @@
-﻿using System;
+﻿using RayTracing.Core;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
@@ -17,14 +18,12 @@ namespace RayTracing.Objects
         public Vector3 EdgeAC { get; set; }
         public Vector3 NormalUnit;
 
-        public Vector3 Color { get; set; }
-
-        public Triangle(Vector3 a, Vector3 b, Vector3 c, Vector3 color)
+        public Triangle(Vector3 a, Vector3 b, Vector3 c, Material material)
         {
             A = a;
             B = b;
             C = c;
-            Color = color;
+            Material = material;
             EdgeAB = B - A;
             EdgeAC = C - A;
             NormalUnit = -Vector3.Normalize(Vector3.Cross(EdgeAB, EdgeAC));

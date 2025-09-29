@@ -1,4 +1,5 @@
-﻿using System;
+﻿using RayTracing.Core;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
@@ -11,16 +12,15 @@ namespace RayTracing.Objects
     {
         public Vector3 Center { get; set; }
         public Vector3 Size { get; set; }
-        public Vector3 Color { get; set; }
         public Quaternion Rotation { get; set; } = Quaternion.Identity;
         public Triangle[] Triangles { get; set; }
         public Sphere[] Vertices { get; set; }
 
-        public Cube(Vector3 center, Vector3 size, Vector3 color)
+        public Cube(Vector3 center, Vector3 size, Material material)
         {
             Center = center;
             Size = size;
-            Color = color;
+            Material = material;
             Rotation = Quaternion.Identity;
             Triangles = ToTriangles(true);
             Vertices = ToSpheres();
@@ -63,21 +63,20 @@ namespace RayTracing.Objects
 
         private Sphere[] ToSpheres()
         {
-            var Color2 = Color * new Vector3(0.05f, 0.05f, 0.05f);
-            var radius = 0.01;
+            var radius = 0.01f;
 
             var points = GetPoints();
 
             var spheres = new Sphere[]
             {
-                new(radius,points[0],Color2),
-                new(radius,points[1],Color2),
-                new(radius,points[2],Color2),
-                new(radius,points[3],Color2),
-                new(radius,points[4],Color2),
-                new(radius,points[5],Color2),
-                new(radius,points[6],Color2),
-                new(radius,points[7],Color2)
+                new(radius,points[0],Material),
+                new(radius,points[1],Material),
+                new(radius,points[2],Material),
+                new(radius,points[3],Material),
+                new(radius,points[4],Material),
+                new(radius,points[5],Material),
+                new(radius,points[6],Material),
+                new(radius,points[7],Material)
             };
 
             return spheres;
@@ -85,34 +84,33 @@ namespace RayTracing.Objects
 
         private Triangle[] ToTriangles(bool twoTone = false)
         {
-            var Color2 = Color * 0.5f;
             var p = GetPoints();
 
             var triangles = new Triangle[]
             {
                 // Bottom face (Y = -halfScale.Y)
-                new(p[0], p[5], p[1], Color),
-                new(p[0], p[4], p[5], twoTone ? Color2 : Color),
+                new(p[0], p[5], p[1], Material),
+                new(p[0], p[4], p[5], Material),
 
                 // Top face (Y = +halfScale.Y)
-                new(p[3], p[6], p[7], Color),
-                new(p[3], p[2], p[6], twoTone ? Color2 : Color),
+                new(p[3], p[6], p[7], Material),
+                new(p[3], p[2], p[6], Material),
 
                 // Front face (Z = +halfScale.Z)
-                new(p[4], p[6], p[5], Color),
-                new(p[4], p[7], p[6], twoTone ? Color2 : Color),
+                new(p[4], p[6], p[5], Material),
+                new(p[4], p[7], p[6], Material),
 
                 // Back face (Z = -halfScale.Z)
-                new(p[0], p[2], p[3], Color),
-                new(p[0], p[1], p[2], twoTone ? Color2 : Color),
+                new(p[0], p[2], p[3], Material),
+                new(p[0], p[1], p[2], Material),
 
                 // Right face (X = +halfScale.X)
-                new(p[1], p[6], p[2], Color),
-                new(p[1], p[5], p[6], twoTone ? Color2 : Color),
+                new(p[1], p[6], p[2], Material),
+                new(p[1], p[5], p[6], Material),
 
                 // Left face (X = -halfScale.X)
-                new(p[0], p[7], p[4], Color),
-                new(p[0], p[3], p[7], twoTone ? Color2 : Color),
+                new(p[0], p[7], p[4], Material),
+                new(p[0], p[3], p[7], Material),
             };
             return triangles;
         }
