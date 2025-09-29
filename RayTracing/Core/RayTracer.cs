@@ -9,55 +9,56 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using static System.Formats.Asn1.AsnWriter;
+using RayTracing.Core;
 
 namespace RayTracing.Core
 {
-    public class RayTracing
+    public class RayTracer
     {
+        public int SamplesPerPixel { get; set; } = 4;
+        public int MaxRayBounces { get; set; } = 8;
+        public int TileSize { get; set; } = 1;
+        public float BounceChance { get; set; } = 0.25f;
+        private const float InvPi = 1f / MathF.PI;
+
         Random rnd = new Random();
-        const float kEps = 1e-4f;
-        private const int MaxDepth = 8;
+        const float kEps = 1e-2f;
+
+        public BVHNode BVHTree;
 
         public void Render(RenderTarget target, Scene scene)
         {
+            BuildBVH(scene);
             int width = target.Width;
             int height = target.Height;
             int pixelCount = width * height;
-
             var cam = scene.Camera;
             Vector3 f = Vector3.Normalize(cam.LookAt - cam.Position);
             Vector3 r = Vector3.Normalize(Vector3.Cross(cam.Up, f));
             Vector3 u = Vector3.Normalize(Vector3.Cross(r, f));
-
             float scale = MathF.Tan(cam.Fov * MathF.PI / 360f);
             float aspect = width / (float)height;
             float invW = 1f / width;
             float invH = 1f / height;
-
-            int tileSize = 16;
-            int tilesX = (width + tileSize - 1) / tileSize;
-            int tilesY = (height + tileSize - 1) / tileSize;
-
+            int tilesX = (width + TileSize - 1) / TileSize;
+            int tilesY = (height + TileSize - 1) / TileSize;
             var threadRng = new ThreadLocal<Random>(() => new Random(Guid.NewGuid().GetHashCode()));
-
             Parallel.For(0, tilesX * tilesY, tileIdx =>
             {
                 int tileY = tileIdx / tilesX;
                 int tileX = tileIdx % tilesX;
-                int startX = tileX * tileSize;
-                int startY = tileY * tileSize;
-                int endX = Math.Min(startX + tileSize, width);
-                int endY = Math.Min(startY + tileSize, height);
+                int startX = tileX * TileSize;
+                int startY = tileY * TileSize;
+                int endX = Math.Min(startX + TileSize, width);
+                int endY = Math.Min(startY + TileSize, height);
                 var rng = threadRng.Value;
-
                 for (int y = startY; y < endY; y++)
                 {
                     for (int x = startX; x < endX; x++)
                     {
                         int i = y * width + x;
-                        int samples = 4;
                         Vector3 color = Vector3.Zero;
-                        for (int s = 0; s < samples; s++)
+                        for (int s = 0; s < SamplesPerPixel; s++)
                         {
                             float jitterX = (float)rng.NextDouble();
                             float jitterY = (float)rng.NextDouble();
@@ -67,53 +68,22 @@ namespace RayTracing.Core
                             d = Vector3.Normalize(d);
                             color += ComputeColor(scene, cam.Position, d);
                         }
-                        color /= samples;
+                        color /= SamplesPerPixel;
                         target.ColourBuffer[i] = color;
                     }
                 }
             });
         }
 
+        public void BuildBVH(Scene scene)
+        {
+            BVHTree = BVH.Build(scene.Triangles, scene.Spheres);
+        }
+
         private bool FindClosestHitPoint(in Scene s, in Vector3 o, in Vector3 d, out HitPoint? hit)
         {
-            float closest = float.PositiveInfinity;
-            HitPoint? best = default;
-            bool found = false;
-
-            foreach (var sphere in s.Spheres)
-            {
-                if (SphereRay(o, d, sphere, out var dist))
-                {
-                    if (dist < closest)
-                    {
-                        closest = dist;
-                        Vector3 p = o + dist * d;
-                        var normal = Vector3.Normalize(p - sphere.Center);
-                        best = new HitPoint { DidHit = true, Material = sphere.Material, Distance = dist, Point = p, Normal = normal};
-                        found = true;
-                    }
-                }
-            }
-
-            foreach (var triangle in s.Triangles)
-            {
-                if (Vector3.Dot(d, triangle.NormalUnit) >= 0f)
-                    continue;
-
-                if (TriangleRay(o, d, triangle, out var dist))
-                {
-                    if (dist < closest)
-                    {
-                        closest = dist;
-                        best = new HitPoint { DidHit = true, Material = triangle.Material, Distance = dist, Point = o + dist * d, Normal= triangle.NormalUnit };
-                        found = true;
-                    }
-                }
-            }
-
-            hit = best;
-
-            return found;
+            // Use BVH for intersection
+            return FindClosestHitPointBVH(BVHTree, o, d, out hit);
         }
 
         private bool SphereRay(in Vector3 o, in Vector3 d, in Sphere sphere, out float t)
@@ -160,16 +130,15 @@ namespace RayTracing.Core
             return t > EPS;
         }
 
-        
+
 
         private Vector3 ComputeColor(Scene scene, Vector3 o, Vector3 d, int depth = 0)
         {
-            if (depth > MaxDepth) return Vector3.Zero;
+            if (depth > MaxRayBounces) return Vector3.Zero;
             HitPoint? hit;
-            float p = 0.1f;
             if (!FindClosestHitPoint(scene, o, d, out hit) || hit == null) return Vector3.Zero;
 
-            if ((float)rnd.NextDouble() < p)
+            if ((float)rnd.NextDouble() < BounceChance)
             {
                 return hit.Material.Emission;
             }
@@ -178,7 +147,7 @@ namespace RayTracing.Core
             var nudge = kEps * hit.Normal;
             var newOrigin = hit.Point + nudge;
 
-            var first = (float)(2 * Math.PI / (1 - p));
+            var first = (float)(2 * Math.PI / (1 - BounceChance));
             var second = Math.Max(0, Vector3.Dot(rndD, hit.Normal));
             var brdf = BRDF(d, rndD, hit);
             var recursion = ComputeColor(scene, newOrigin, rndD, depth + 1);
@@ -186,6 +155,23 @@ namespace RayTracing.Core
         }
 
         private static Vector3 BRDF(Vector3 incoming, Vector3 outgoing, HitPoint hit)
+        {
+            var diffuse = hit.Material.Diffuse * InvPi;
+
+            Vector3 n = Vector3.Normalize(hit.Normal);
+            Vector3 wi = Vector3.Normalize(incoming);
+            Vector3 wo = Vector3.Normalize(outgoing);
+            
+            Vector3 dr = Vector3.Reflect(wi, n);
+
+            if (Vector3.Dot(wo, dr) > 1 - 0.01)
+            {
+                return diffuse + 10 * hit.Material.Specular;
+            }
+
+            return diffuse;
+        }
+        private static Vector3 BRDFBlinn(Vector3 incoming, Vector3 outgoing, HitPoint hit)
         {
             var diffuse = hit.Material.Diffuse * (float)(1 / Math.PI);
 
@@ -218,6 +204,58 @@ namespace RayTracing.Core
         public float NextFloat()
         {
             return (float)((rnd.NextDouble() * 2) - 1);
+        }
+
+        private bool FindClosestHitPointBVH(BVHNode node, in Vector3 o, in Vector3 d, out HitPoint? hit)
+        {
+            hit = null;
+            float closest = float.PositiveInfinity;
+            HitPoint? best = null;
+            if (node == null) return false;
+            if (!node.Bounds.Intersect(o, d, out float tmin, out float tmax)) return false;
+            if (node.IsLeaf)
+            {
+                foreach (var sphere in node.Spheres ?? new List<Sphere>())
+                {
+                    if (SphereRay(o, d, sphere, out var dist))
+                    {
+                        if (dist < closest)
+                        {
+                            closest = dist;
+                            Vector3 p = o + dist * d;
+                            var normal = Vector3.Normalize(p - sphere.Center);
+                            best = new HitPoint { DidHit = true, Material = sphere.Material, Distance = dist, Point = p, Normal = normal };
+                        }
+                    }
+                }
+                foreach (var triangle in node.Triangles ?? new List<Triangle>())
+                {
+                    if (Vector3.Dot(d, triangle.NormalUnit) >= 0f) continue;
+                    if (TriangleRay(o, d, triangle, out var dist))
+                    {
+                        if (dist < closest)
+                        {
+                            closest = dist;
+                            best = new HitPoint { DidHit = true, Material = triangle.Material, Distance = dist, Point = o + dist * d, Normal = triangle.NormalUnit };
+                        }
+                    }
+                }
+                hit = best;
+                return best != null;
+            }
+            bool foundLeft = FindClosestHitPointBVH(node.Left, o, d, out HitPoint? hitLeft);
+            bool foundRight = FindClosestHitPointBVH(node.Right, o, d, out HitPoint? hitRight);
+            if (foundLeft && (!foundRight || hitLeft.Distance < hitRight.Distance))
+            {
+                hit = hitLeft;
+                return true;
+            }
+            if (foundRight)
+            {
+                hit = hitRight;
+                return true;
+            }
+            return false;
         }
     }
 }

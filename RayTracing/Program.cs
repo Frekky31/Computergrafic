@@ -15,11 +15,19 @@ namespace RayTracing
         static void Main(string[] args)
         {
             float aspectRatio = 16f / 9f;
-            int width = 1080;
-            int height = (int)(width / aspectRatio);
+            int width = 800;
+            int height = 800;
             RenderTarget renderTarget = new(width, height);
 
-            Engine.Run(renderTarget, new CatScene(false, false), false);
+            RayTracer rayTracing = new()
+            {
+                SamplesPerPixel = 64,
+                MaxRayBounces = 1000,
+                TileSize = 20,
+                BounceChance = 0.2f
+            };
+
+            Engine.Run(renderTarget, new CatScene(), rayTracing, false);
         }
     }
 }

@@ -16,7 +16,7 @@ namespace RayTracing.Objects
 
         Camera cameraM = new(new(0, 0, -5), new(0, 0, 6), new(0, 1, 0), 36);
         Sphere animatedSphere = new(0.1f, new Vector3(0.3f, -0.4f, -1f), new(new(0.5f, 0.05f, 0.07f)));
-        List<Camera> cameras;
+        List<Camera> cameras = [];
         Mesh cat = ObjImporter.LoadObj("Meshes/cat.obj", new(new(0.95f, 0.48f, 0.78f)), true);
         bool CameraScene = false;
         bool Animation = false;
@@ -25,6 +25,15 @@ namespace RayTracing.Objects
         {
             CameraScene = cameraScene;
             Animation = animation;
+            Setup();
+        }
+
+        public TestScene() : this(false, false)
+        {
+        }
+
+        public void Setup()
+        {
             var sphA = new Sphere(0.05f, new Vector3(0.5f, 0.9f, -1f), new(new(1f, 1f, 1f)));
             var sphB = new Sphere(0.05f, new Vector3(0.9f, 0.9f, -1f), new(new(0.5f, 0.5f, 0.5f)));
             var sphC = new Sphere(0.05f, new Vector3(0.9f, 0.1f, -1f), new(new(0.1f, 0.1f, 0.1f)));
@@ -92,7 +101,7 @@ namespace RayTracing.Objects
             cat.Move(new Vector3(100f, -150.8f, 0.2f));
             cat.Rotate(Quaternion.CreateFromAxisAngle(new Vector3(0, 1, 0), MathF.PI / 6));
             cat.Scale(0.003f);
-            //Triangles.AddRange(mesh.Triangles);
+            Triangles.AddRange(mesh.Triangles);
             //Triangles.AddRange(ring.Triangles);
             //Triangles.AddRange(cat.Triangles);
             Triangles.AddRange(
@@ -116,7 +125,6 @@ namespace RayTracing.Objects
             cameras = [cameraDolly, camera, cameraCube, cameraTop, cameraPart2];
             //cameras = [camera, camera1, camera2, camera3];
         }
-
 
         public int mult { get; set; } = 1;
 

@@ -2,6 +2,7 @@
 using RayTracing.Scenes;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Numerics;
 using System.Text;
@@ -14,9 +15,14 @@ namespace RayTracing.Core
 {
     public class Engine
     {
-
         public static void Run(RenderTarget target, Scene scene, bool run = false)
         {
+            Run(target, scene, new RayTracer(), run);
+        }
+
+        public static void Run(RenderTarget target, Scene scene, RayTracer rayTracer, bool run = false)
+        {
+            Raylib.SetConfigFlags(ConfigFlags.ResizableWindow);
             Raylib.InitWindow(target.Width, target.Height, "Ray Tracing");
 
             Image img = Raylib.GenImageColor(target.Width, target.Height, Color.Black);
@@ -28,7 +34,6 @@ namespace RayTracing.Core
             Rectangle src = new(0, texture.Height, texture.Width, -texture.Height);
             Vector2 origin = new(0, 0);
             bool firstFrameDrawn = false;
-            RayTracing rayTracer = new();
 
             while (!Raylib.WindowShouldClose())
             {
@@ -47,6 +52,17 @@ namespace RayTracing.Core
                     Raylib.EndDrawing();
 
                     firstFrameDrawn = true;
+                    if (!run)
+                    {
+                        if(!Directory.Exists("Pictures"))
+                            Directory.CreateDirectory("Pictures");
+                        Image screenshot = Raylib.LoadImageFromTexture(texture);
+
+                        Raylib.ImageFlipVertical(ref screenshot);
+
+                        Raylib.ExportImage(screenshot, $"Pictures/output-{DateTime.Now:yyyyMMddHHmm}.png");
+                        Raylib.UnloadImage(screenshot);
+                    }
                 }
                 else
                 {
