@@ -61,6 +61,7 @@ namespace RayTracing.Objects
 
             Material m_cube1 = new() { Specular = new(0.78f, 0.76f, 0.1f), Diffuse= new(0.78f, 0.76f, 0.1f), SpecularDistance = 0.01f };
             Material m_cube2 = new() { Specular = new(0.04f, 0.4f, 0.7f), Diffuse = new(0.04f, 0.4f, 0.7f), SpecularDistance = 0.8f };
+            Material m_ring = new() { Specular = new(0.8f, 0.8f, 0.8f), Diffuse = new(0.9f, 0.9f, 0.9f), SpecularDistance = 0.8f };
 
             Spheres.AddRange(
             [
@@ -93,15 +94,17 @@ namespace RayTracing.Objects
             Triangles.AddRange(floor.Triangles);
 
             var mesh = ObjImporter.LoadObj("Meshes/TestObject.obj", new(new(0.5f, 0.5f, 0.5f)));
-            var ring = ObjImporter.LoadObj("Meshes/Ring.obj", new(new(0.7f, 0.7f, 0.7f)), true);
+            var ring = ObjImporter.LoadObj("Meshes/Ring.obj", m_ring, true);
             mesh.Scale(0.2f);
+            // rotate 45 degrees around X axis
+            ring.Rotate(Quaternion.CreateFromAxisAngle(new Vector3(-1, 0, 0), MathF.PI / 4));
             mesh.Move(new Vector3(0, -0.8f, -0.6f));
             ring.Scale(0.2f);
             ring.Move(new Vector3(0, -0.2f, -0.6f));
             cat.Move(new Vector3(100f, -150.8f, 0.2f));
             cat.Rotate(Quaternion.CreateFromAxisAngle(new Vector3(0, 1, 0), MathF.PI / 6));
             cat.Scale(0.003f);
-            Triangles.AddRange(mesh.Triangles);
+            Triangles.AddRange(ring.Triangles);
             //Triangles.AddRange(ring.Triangles);
             //Triangles.AddRange(cat.Triangles);
             Triangles.AddRange(

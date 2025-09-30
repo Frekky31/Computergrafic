@@ -15,16 +15,16 @@ namespace RayTracing
         static void Main(string[] args)
         {
             float aspectRatio = 16f / 9f;
-            int width = 600;
-            int height = 600;
+            int width = 500;
+            int height = 500;
             RenderTarget renderTarget = new(width, height);
 
             RayTracer rayTracing = new()
             {
-                SamplesPerPixel = 128,
+                SamplesPerPixel = 32,
                 MaxRayBounces = 1000,
                 TileSize = 20,
-                BounceChance = 0.05f
+                BounceChance = 0.1f
             };
 
             Engine.Run(renderTarget, new OnlySpheres(), rayTracing, false);

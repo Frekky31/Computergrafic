@@ -82,8 +82,44 @@ namespace RayTracing.Core
 
         private bool FindClosestHitPoint(in Scene s, in Vector3 o, in Vector3 d, out HitPoint? hit)
         {
-            // Use BVH for intersection
-            return FindClosestHitPointBVH(BVHTree, o, d, out hit);
+            float closest = float.PositiveInfinity;
+            HitPoint? best = default;
+            bool found = false;
+
+            foreach (var sphere in s.Spheres)
+            {
+                if (SphereRay(o, d, sphere, out var dist))
+                {
+                    if (dist < closest)
+                    {
+                        closest = dist;
+                        Vector3 p = o + dist * d;
+                        var normal = Vector3.Normalize(p - sphere.Center);
+                        best = new HitPoint { DidHit = true, Material = sphere.Material, Distance = dist, Point = p, Normal = normal };
+                        found = true;
+                    }
+                }
+            }
+
+            foreach (var triangle in s.Triangles)
+            {
+                if (Vector3.Dot(d, triangle.NormalUnit) >= 0f)
+                    continue;
+
+                if (TriangleRay(o, d, triangle, out var dist))
+                {
+                    if (dist < closest)
+                    {
+                        closest = dist;
+                        best = new HitPoint { DidHit = true, Material = triangle.Material, Distance = dist, Point = o + dist * d, Normal = triangle.NormalUnit };
+                        found = true;
+                    }
+                }
+            }
+
+            hit = best;
+
+            return found;
         }
 
         private bool SphereRay(in Vector3 o, in Vector3 d, in Sphere sphere, out float t)
@@ -162,9 +198,9 @@ namespace RayTracing.Core
             
             Vector3 dr = Vector3.Reflect(wi, n);
 
-            if (Vector3.Dot(wo, dr) > 1 - 0.005)
+            if (Vector3.Dot(wo, dr) > 1 - 0.001)
             {
-                return diffuse + 10 * hit.Material.Specular;
+                return diffuse + 12 * hit.Material.Specular;
             }
 
             return diffuse;

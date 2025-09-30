@@ -11,6 +11,9 @@ namespace RayTracing.Objects
     {
         public Triangle[] Triangles;
         public Vector3[] Vertices;
+
+        public Vector3 Center;
+
         public Mesh(Span<Triangle> triangles, Span<Vector3> vertices)
         {
             Triangles = triangles.ToArray();
@@ -19,12 +22,11 @@ namespace RayTracing.Objects
 
         public override void Rotate(Quaternion rotation)
         {
-            // Rotate all vertices
+            // Rotate all vertices around the origin
             for (int i = 0; i < Vertices.Length; i++)
             {
                 Vertices[i] = Vector3.Transform(Vertices[i], rotation);
             }
-
             // Update triangles to use rotated vertices
             foreach (var t in Triangles)
             {
