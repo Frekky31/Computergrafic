@@ -210,7 +210,7 @@ namespace RayTracing.Core
             
             Vector3 dr = Vector3.Reflect(wi, n);
 
-            if (Vector3.Dot(wo, dr) > 1 - 0.006)
+            if (Vector3.Dot(wo, dr) > 1 - hit.Material.SpecularDistance)
             {
                 return diffuse + 12 * hit.Material.Specular;
             }

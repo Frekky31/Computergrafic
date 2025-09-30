@@ -6,7 +6,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
-    <AssemblyName>Swissgrid.TemplateViewer</AssemblyName>
+    <AssemblyName>$(MSBuildProjectName.Replace(" ", "_"))</AssemblyName>
     <PublishReadyToRun>true</PublishReadyToRun>
     <TieredPGO>true</TieredPGO>
   </PropertyGroup>

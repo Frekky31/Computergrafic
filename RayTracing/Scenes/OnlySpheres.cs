@@ -22,8 +22,8 @@ namespace RayTracing.Objects
             Material m_floor = new(new(0.6f, 0.6f, 0.6f));
 
 
-            Material m_cube1 = new() { Specular = new(0.78f, 0.76f, 0.1f), Diffuse= new(0.78f, 0.76f, 0.1f), SpecularDistance = 0.001f };
-            Material m_cube2 = new() { Specular = new(1f, 1f, 1f), Diffuse = new(0.8f, 0.8f, 0.8f), SpecularDistance = 8f };
+            Material m_cube1 = new() { Specular = new(0.78f, 0.76f, 0.1f), Diffuse= new(0.78f, 0.76f, 0.1f), SpecularDistance = 0.01f };
+            Material m_cube2 = new() { Specular = new(1f, 1f, 1f), Diffuse = new(0.8f, 0.8f, 0.8f), SpecularDistance = 0.01f };
 
             Spheres.AddRange(
             [

@@ -8,7 +8,7 @@ namespace RayTracing.Objects
     public class CatScene : Scene
     {
         Camera cameraM = new(new(0, 0, -5), new(0, 0, 6), new(0, 1, 0), 36);
-        static Material catMat = new(new(0.95f, 0.48f, 0.78f))
+        static Material catMat = new()
         {
             Specular = new(0.95f, 0.48f, 0.78f),
             Diffuse = new(0.95f, 0.48f, 0.78f),
@@ -32,11 +32,11 @@ namespace RayTracing.Objects
         public void Setup()
         {
             
-            Material m_wallLeft = new(new(0.7f, 0.07f, 0.03f), new(0.7f, 0.07f, 0.03f), 1f);
-            Material m_wallRight = new(new(0.09f, 0.04f, 0.7f), new(0.09f, 0.04f, 0.7f), 1f);
-            Material m_wallBack = new(new(0.6f, 0.6f, 0.6f), new(0.6f, 0.6f, 0.6f), 1f);
-            Material m_floor = new(new(0.6f, 0.6f, 0.6f), new(0.6f, 0.6f, 0.6f), 1f);
-            Material m_ceiling = new(new(0.6f, 0.6f, 0.6f), new(0.6f, 0.6f, 0.6f), 1f);
+            Material m_wallLeft = new(new(0.7f, 0.07f, 0.03f), new(0.7f, 0.07f, 0.03f), 0.01f);
+            Material m_wallRight = new(new(0.09f, 0.04f, 0.7f), new(0.09f, 0.04f, 0.7f), 0.01f);
+            Material m_wallBack = new(new(0.6f, 0.6f, 0.6f), new(0.6f, 0.6f, 0.6f), 0.01f);
+            Material m_floor = new(new(0.6f, 0.6f, 0.6f), new(0.6f, 0.6f, 0.6f), 0.01f);
+            Material m_ceiling = new(new(0.6f, 0.6f, 0.6f), new(0.6f, 0.6f, 0.6f), 0.01f);
 
             Rectangle wallLeft = new(new(-1, -1, 1), new(0f, 2f, 0f), new(0, 0, -20), m_wallLeft);
             Rectangle wallRight = new(new(1, 1, 1), new(0f, -2f, 0f), new(0, 0, -20), m_wallRight);
