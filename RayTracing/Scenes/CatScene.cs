@@ -31,11 +31,18 @@ namespace RayTracing.Objects
 
         public void Setup()
         {
-            Rectangle wallLeft = new(new(-1, -1, 1), new(0f, 2f, 0f), new(0, 0, -20), new(new(0.67f, 0.07f, 0.03f)));
-            Rectangle wallRight = new(new(1, 1, 1), new(0f, -2f, 0f), new(0, 0, -20), new(new(0.09f, 0.04f, 0.67f)));
-            Rectangle wallBack = new(new(-1, 1, 1), new(0f, -2f, 0f), new(2, 0, 0), new(new(0.09f, 0.6f, 0.02f)));
-            Rectangle floor = new(new(1, -1, 1), new(-2f, 0f, 0f), new(0, 0, -20), new(new(0.6f, 0.6f, 0.6f)));
-            Rectangle ceiling = new(new(-1, 1, 1), new(2f, 0f, 0f), new(0, 0, -20), new(new(0.6f, 0.6f, 0.6f)));
+            
+            Material m_wallLeft = new(new(0.7f, 0.07f, 0.03f), new(0.7f, 0.07f, 0.03f), 1f);
+            Material m_wallRight = new(new(0.09f, 0.04f, 0.7f), new(0.09f, 0.04f, 0.7f), 1f);
+            Material m_wallBack = new(new(0.6f, 0.6f, 0.6f), new(0.6f, 0.6f, 0.6f), 1f);
+            Material m_floor = new(new(0.6f, 0.6f, 0.6f), new(0.6f, 0.6f, 0.6f), 1f);
+            Material m_ceiling = new(new(0.6f, 0.6f, 0.6f), new(0.6f, 0.6f, 0.6f), 1f);
+
+            Rectangle wallLeft = new(new(-1, -1, 1), new(0f, 2f, 0f), new(0, 0, -20), m_wallLeft);
+            Rectangle wallRight = new(new(1, 1, 1), new(0f, -2f, 0f), new(0, 0, -20), m_wallRight);
+            Rectangle wallBack = new(new(-1, 1, 1), new(0f, -2f, 0f), new(2, 0, 0), m_wallBack);
+            Rectangle floor = new(new(1, -1, 1), new(-2f, 0f, 0f), new(0, 0, -20), m_floor);
+            Rectangle ceiling = new(new(-1, 1, 1), new(2f, 0f, 0f), new(0, 0, -20), m_ceiling);
 
             Triangles.AddRange(wallLeft.Triangles);
             Triangles.AddRange(wallRight.Triangles);

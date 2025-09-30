@@ -21,10 +21,21 @@ namespace RayTracing.Core
         public float BounceChance { get; set; } = 0.25f;
         private const float InvPi = 1f / MathF.PI;
 
+        public Vector3 AmbientLight = new(0.1f, 0.1f, 0.1f);
+
         Random rnd = new Random();
         const float kEps = 1e-2f;
 
         public BVHNode BVHTree;
+
+        private Vector3 ClampColor(Vector3 color, float max = 1.0f)
+        {
+            return new Vector3(
+                MathF.Min(color.X, max),
+                MathF.Min(color.Y, max),
+                MathF.Min(color.Z, max)
+            );
+        }
 
         public void Render(RenderTarget target, Scene scene)
         {
@@ -57,7 +68,7 @@ namespace RayTracing.Core
                     for (int x = startX; x < endX; x++)
                     {
                         int i = y * width + x;
-                        Vector3 color = Vector3.Zero;
+                        Vector3 color = AmbientLight;
                         for (int s = 0; s < SamplesPerPixel; s++)
                         {
                             float jitterX = (float)rng.NextDouble();
@@ -69,6 +80,7 @@ namespace RayTracing.Core
                             color += ComputeColor(scene, cam.Position, d);
                         }
                         color /= SamplesPerPixel;
+                        color = ClampColor(color, 1.0f); // Clamp fireflies
                         target.ColourBuffer[i] = color;
                     }
                 }
@@ -170,7 +182,7 @@ namespace RayTracing.Core
 
         private Vector3 ComputeColor(Scene scene, Vector3 o, Vector3 d, int depth = 0)
         {
-            if (!FindClosestHitPoint(scene, o, d, out HitPoint? hit) || hit == null) return Vector3.Zero;
+            if (!FindClosestHitPoint(scene, o, d, out HitPoint? hit) || hit == null) return AmbientLight;
 
             if ((BounceChance > 0f && (float)rnd.NextDouble() < BounceChance))
             {
@@ -198,7 +210,7 @@ namespace RayTracing.Core
             
             Vector3 dr = Vector3.Reflect(wi, n);
 
-            if (Vector3.Dot(wo, dr) > 1 - 0.001)
+            if (Vector3.Dot(wo, dr) > 1 - 0.006)
             {
                 return diffuse + 12 * hit.Material.Specular;
             }
@@ -219,6 +231,26 @@ namespace RayTracing.Core
             var specular = hit.Material.Specular * specularStrength;
 
             return diffuse + specular;
+        }
+
+        private Vector3 RandomDirectionHemi(Vector3 normal)
+        {
+            // Cosine-weighted hemisphere sampling
+            float u1 = (float)rnd.NextDouble();
+            float u2 = (float)rnd.NextDouble();
+            float r = MathF.Sqrt(u1);
+            float theta = 2 * MathF.PI * u2;
+            float x = r * MathF.Cos(theta);
+            float y = r * MathF.Sin(theta);
+            float z = MathF.Sqrt(MathF.Max(0f, 1 - u1));
+            // Create orthonormal basis
+            Vector3 w = Vector3.Normalize(normal);
+            Vector3 a = MathF.Abs(w.X) > 0.1f ? new Vector3(0, 1, 0) : new Vector3(1, 0, 0);
+            Vector3 v = Vector3.Normalize(Vector3.Cross(a, w));
+            Vector3 u = Vector3.Cross(w, v);
+            // Transform sample to world space
+            Vector3 dir = x * u + y * v + z * w;
+            return Vector3.Normalize(dir);
         }
 
         private Vector3 RandomDirection(Vector3 normal)
