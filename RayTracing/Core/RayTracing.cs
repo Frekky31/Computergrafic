@@ -7,6 +7,7 @@ using System.Numerics;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows.Media.Media3D;
 
 namespace RayTracing.Core
 {
@@ -14,8 +15,20 @@ namespace RayTracing.Core
     {
         Random rnd = new Random();
         const float kEps = 1e-4f;
+        Vector3 c_f;
+        Vector3 c_r;
+        Vector3 c_u;
+        float c_scale;
+
         public void Render(RenderTarget target, Scene Scene)
         {
+            c_f = Vector3.Normalize(Scene.Camera.LookAt - Scene.Camera.Position);
+            c_r = Vector3.Normalize(Vector3.Cross(Scene.Camera.Up, c_f));
+            c_u = Vector3.Normalize(Vector3.Cross(c_r, c_f));
+            c_scale = (float)Math.Tan(Scene.Camera.Fov * MathF.PI / 180f / 2);
+            int samples = 1;
+            Vector3 sampleBuffer = Vector3.Zero;
+
             Parallel.For(0, target.Height, y =>
             {
                 var py = 1 - 2 * ((y + 0.5f) / target.Height);
@@ -25,27 +38,22 @@ namespace RayTracing.Core
 
                     Vector2 pixel = new((2 * ((x + 0.5f) / target.Width) - 1) * (target.Width / (float)target.Height), py);
 
-                    var (o, d) = CreateEyeRay(Scene.Camera, pixel);
-                    target.ColourBuffer[index] = ComputeColor(Scene, o, d);
+                    float beta = c_scale * pixel.Y;
+                    float omega = c_scale * pixel.X;
+
+                    Vector3 d = Vector3.Normalize(c_f + beta * c_u + omega * c_r);
+                    for (int i = 0; i < samples; i++)
+                    {
+                        sampleBuffer += ComputeColor(Scene, Scene.Camera.Position, d);
+                    }
+
+                    target.ColourBuffer[index] = sampleBuffer / samples;
+                    sampleBuffer = Vector3.Zero;
                 }
             });
         }
 
-        private static (Vector3 o, Vector3 d) CreateEyeRay(Camera camera, Vector2 pixel)
-        {
-            Vector3 f = Vector3.Normalize(camera.LookAt - camera.Position);
-            Vector3 r = Vector3.Normalize(Vector3.Cross(camera.Up, f));
-            Vector3 u = Vector3.Normalize(Vector3.Cross(r, f));
-            float scale = (float)Math.Tan(camera.Fov * MathF.PI / 180f / 2);
-            float beta = scale * pixel.Y;
-            float omega = scale * pixel.X;
-
-            Vector3 d = Vector3.Normalize(f + beta * u + omega * r);
-
-            return (camera.Position, d);
-        }
-
-        private static HitPoint? FindClosestHitPoint(Scene s, Vector3 o, Vector3 d)
+        private HitPoint? FindClosestHitPoint(Scene s, Vector3 o, Vector3 d)
         {
             List<HitPoint> hits = [];
             foreach (var sphere in s.Spheres)
@@ -66,7 +74,7 @@ namespace RayTracing.Core
             return null;
         }
 
-        private static List<HitPoint> SphereRay(Vector3 o, Vector3 d, Sphere sphere)
+        private List<HitPoint> SphereRay(Vector3 o, Vector3 d, Sphere sphere)
         {
             List<HitPoint> hits = [];
             Vector3 oc = o - sphere.Center;
@@ -87,7 +95,7 @@ namespace RayTracing.Core
             return hits;
         }
 
-        private static List<HitPoint> TriangleRay(Vector3 o, Vector3 d, Triangle triangle)
+        private List<HitPoint> TriangleRay(Vector3 o, Vector3 d, Triangle triangle)
         {
             List<HitPoint> hits = [];
             Vector3 edgeAB = triangle.B - triangle.A;
@@ -116,7 +124,7 @@ namespace RayTracing.Core
             return hits;
         }
 
-        private static HitPoint GetHitPoint(Vector3 o, Vector3 d, float t, Sphere sphere)
+        private HitPoint GetHitPoint(Vector3 o, Vector3 d, float t, Sphere sphere)
         {
             Vector3 hitPoint = o + t * d;
             Vector3 normal = Vector3.Normalize(hitPoint - sphere.Center);
@@ -127,7 +135,7 @@ namespace RayTracing.Core
         private Vector3 ComputeColor(Scene scene, Vector3 o, Vector3 d)
         {
             var hit = FindClosestHitPoint(scene, o, d);
-            float p = 0.007f;
+            float p = 0.1f;
             if (hit == null) return Vector3.Zero;
 
             if (rnd.NextDouble() < p)
@@ -146,15 +154,15 @@ namespace RayTracing.Core
             return hit.Material.Emission + first * second * Vector3.Multiply(brdf, recursion);
         }
 
-        private static Vector3 BRDF(Vector3 incoming, Vector3 outgoing, HitPoint hit)
+        private Vector3 BRDF(Vector3 incoming, Vector3 outgoing, HitPoint hit)
         {
             var dRef = Vector3.Reflect(incoming, hit.Normal);
 
             var diffuse = hit.Material.Diffuse * (float)(1 / Math.PI);
 
-            if (Vector3.Dot(outgoing, dRef) > 1f - hit.Material.SpecularDistance)
+            if (Vector3.Dot(outgoing, dRef) > 1f - 0.01)
             {
-                return diffuse + hit.Material.Specular * 20;
+                return diffuse + hit.Material.Specular * 10;
             }
 
             return diffuse;
