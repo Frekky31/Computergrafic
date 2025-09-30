@@ -33,8 +33,8 @@ namespace RayTracing.Objects
                 new Sphere(1000, new Vector3(0, -1001, 0), m_floor),
                 new Sphere(1000, new Vector3(0, 1001, 0), light),
 
-                new Sphere(0.3f, new Vector3(-0.6f, -0.7f, -0.6f), m_cube1),
-                new Sphere(0.6f, new Vector3(0.3f, -0.4f, 0.3f), m_cube2),
+                new Sphere(0.3f, new Vector3(-0.6f, -0.69f, -0.6f), m_cube1),
+                new Sphere(0.6f, new Vector3(0.3f, -0.39f, 0.3f), m_cube2),
             ]);
 
 

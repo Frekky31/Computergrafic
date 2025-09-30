@@ -134,11 +134,9 @@ namespace RayTracing.Core
 
         private Vector3 ComputeColor(Scene scene, Vector3 o, Vector3 d, int depth = 0)
         {
-            if (depth > MaxRayBounces) return Vector3.Zero;
-            HitPoint? hit;
-            if (!FindClosestHitPoint(scene, o, d, out hit) || hit == null) return Vector3.Zero;
+            if (!FindClosestHitPoint(scene, o, d, out HitPoint? hit) || hit == null) return Vector3.Zero;
 
-            if ((float)rnd.NextDouble() < BounceChance)
+            if ((BounceChance > 0f && (float)rnd.NextDouble() < BounceChance))
             {
                 return hit.Material.Emission;
             }
@@ -164,7 +162,7 @@ namespace RayTracing.Core
             
             Vector3 dr = Vector3.Reflect(wi, n);
 
-            if (Vector3.Dot(wo, dr) > 1 - 0.01)
+            if (Vector3.Dot(wo, dr) > 1 - 0.005)
             {
                 return diffuse + 10 * hit.Material.Specular;
             }
