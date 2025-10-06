@@ -2,6 +2,7 @@
 using RayTracing.Scenes;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Numerics;
 using System.Text;
@@ -46,7 +47,18 @@ namespace RayTracing.Core
                     Raylib.DrawTexturePro(texture, src, dest, origin, 0.0f, Color.White);
                     Raylib.EndDrawing();
 
-                    firstFrameDrawn = true;
+                    firstFrameDrawn = true; 
+                    if (!run)
+                    {
+                        if (!Directory.Exists("Pictures"))
+                            Directory.CreateDirectory("Pictures");
+                        Image screenshot = Raylib.LoadImageFromTexture(texture);
+
+                        Raylib.ImageFlipVertical(ref screenshot);
+
+                        Raylib.ExportImage(screenshot, $"Pictures/output-{DateTime.Now:yyyyMMddHHmm}.png");
+                        Raylib.UnloadImage(screenshot);
+                    }
                 }
                 else
                 {

@@ -13,7 +13,7 @@ namespace RayTracing.Core
         public Vector3 Emission { get; set; }
         public Vector3 Specular { get; set; }
 
-        public float SpecularDistance { get; set; } = 1.0f;
+        public float SpecularDistance { get; set; } = 0.01f;
 
         public Material() {
             Diffuse = Vector3.Zero;

@@ -1,5 +1,6 @@
 ﻿using RayTracing.Core;
 using RayTracing.Objects;
+using RayTracing.Scenes;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -17,12 +18,13 @@ namespace RayTracing
 
             RayTracer rayTracer = new()
             {
-                MaxDepth = 5000,
+
                 SamplesPerPixel = 32,
-                Probability = 0.2f
+                MaxDepth = 20,
+                Probability = 0.1f
             };
 
-            Engine.Run(renderTarget, rayTracer, new TestScene(), false);
+            Engine.Run(renderTarget, rayTracer, new SpheresScene(), false);
         }
     }
 }

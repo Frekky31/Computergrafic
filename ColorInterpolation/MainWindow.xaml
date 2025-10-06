@@ -24,15 +24,6 @@
                     <Label Content="Color Picker 2:" VerticalAlignment="Center" />
                     <xctk:ColorPicker Name="ColorPicker2" Width="150" Height="25" SelectedColorChanged="ColorPicker2_SelectedColorChanged" />
                 </StackPanel>
-
-                <!-- Orientation Radio Buttons -->
-                <GroupBox Header="Orientation" Margin="10" VerticalAlignment="Center" Background="Transparent">
-                    <StackPanel>
-                        <RadioButton Name="RadioHorizontal" Content="Horizontal" IsChecked="True" Checked="OrientationChanged"/>
-                        <RadioButton Name="RadioVertical" Content="Vertical" Checked="OrientationChanged"/>
-                        <RadioButton Name="RadioDiagonal" Content="Diagonal" Checked="OrientationChanged"/>
-                    </StackPanel>
-                </GroupBox>
             </StackPanel>
         </Grid>
     </Grid>

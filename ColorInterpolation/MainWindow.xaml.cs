@@ -21,7 +21,6 @@ namespace ColorInterpolation
         private const int ImageHeight = 300;
         private readonly WriteableBitmap bitmap = new(ImageWidth, ImageHeight, 96, 96, PixelFormats.Bgra32, null);
         private readonly Vector3[] pixelColors = new Vector3[ImageWidth * ImageHeight];
-        private Orientation orientation = Orientation.Horizontal;
 
         private Vector3 Color1 = new(0f, 1f, 1f);
         private Vector3 Color2 = new(0f, 1f, 0f);
@@ -39,20 +38,6 @@ namespace ColorInterpolation
             imgDisplay.Source = bitmap;
         }
 
-        private void Additive()
-        {
-            var col = Vector3.Multiply(Color1, Color2);
-            
-            for (int i = 0; i < ImageHeight; i++)
-            {
-                for (int j = 0; j < ImageWidth; j++)
-                {
-                    int index = i * ImageWidth + j;
-                    pixelColors[index] = col;
-                }
-            }
-        }
-
         private void Interpolation()
         {
             for (int i = 0; i < ImageHeight; i++)
@@ -60,26 +45,24 @@ namespace ColorInterpolation
                 for (int j = 0; j < ImageWidth; j++)
                 {
                     int index = i * ImageWidth + j;
-                    float t = 0;
 
-                    switch (orientation)
-                    {
-                        case Orientation.Vertical:
-                            t = (float)i / (ImageHeight - 1);
-                            break;
-                        case Orientation.Horizontal:
-                            t = (float)j / (ImageWidth - 1);
-                            break;
-                        case Orientation.Diagonal:
-                            t = (float)((i + j) / (ImageWidth - 1 + Height - 1));
-                            break;
-                        default:
-                            break;
-                    }
-
-                    pixelColors[index] = Vector3.Lerp(Color1, Color2, t);
+                    pixelColors[index] = GetColor(j, i);
                 }
             }
+        }
+
+        public Vector3 GetColor(float x, float y)
+        {
+
+            var f = MathF.Sin(x / 10f) + MathF.Sin(y / 10f);
+            return new Vector3(f*3, MathF.Sin(f * 3 + 2), MathF.Sin(f * 3 + 10)
+                );
+        }
+
+        public Vector3 GetColorSin(float x, float y)
+        {
+            var f = MathF.Sin(x / 10f + MathF.Sin(y / 40f) * 5) * 5;
+            return new(MathF.Sin(f) * 0.5f + 0.5f, MathF.Sin(f + 2) * 0.5f + 0.5f, MathF.Sin(f + 10) * 0.5f + 0.5f);
         }
 
         private void RenderVector3ColorsToBitmap()
@@ -149,23 +132,6 @@ namespace ColorInterpolation
                 Color2.Z = SrgbByteToFloat(e.NewValue.Value.B);
                 PrintImage();
             }
-        }
-
-        private void OrientationChanged(object sender, RoutedEventArgs e)
-        {
-            if (RadioHorizontal.IsChecked == true)
-            {
-                orientation = Orientation.Horizontal;
-            }
-            else if (RadioVertical.IsChecked == true)
-            {
-                orientation = Orientation.Vertical;
-            }
-            else if (RadioDiagonal.IsChecked == true)
-            {
-                orientation = Orientation.Diagonal;
-            }
-            PrintImage();
         }
     }
 

@@ -16,11 +16,12 @@ namespace RayTracing.Core
     public class RayTracer
     {
         private readonly Random rnd = new();
-        const float kEps = 1e-4f;
-        Vector3 c_f;
-        Vector3 c_r;
-        Vector3 c_u;
-        float c_scale;
+        private const float kEps = 1e-4f;
+        private Vector3 c_f;
+        private Vector3 c_r;
+        private Vector3 c_u;
+        private float c_scale;
+        const float InvPi = 1f / MathF.PI;
 
         public Vector3 BackgroundColor { get; set; } = new(0.1f, 0.1f, 0.1f);
         public int MaxDepth { get; set; } = 5;
@@ -38,6 +39,9 @@ namespace RayTracing.Core
             c_u = Vector3.Normalize(Vector3.Cross(c_r, c_f));
             c_scale = (float)Math.Tan(Scene.Camera.Fov * MathF.PI / 180f / 2);
             Vector3 sampleBuffer = BackgroundColor;
+
+
+            var threadRng = new ThreadLocal<Random>(() => new Random(Guid.NewGuid().GetHashCode()));
 
             Parallel.For(0, target.Height, y =>
             {
@@ -177,15 +181,19 @@ namespace RayTracing.Core
             return BackgroundColor;
         }
 
-        private Vector3 BRDF(Vector3 incoming, Vector3 outgoing, HitPoint hit)
+        private static Vector3 BRDF(Vector3 incoming, Vector3 outgoing, HitPoint hit)
         {
-            var dRef = Vector3.Reflect(incoming, hit.Normal);
+            var diffuse = hit.Material.Diffuse * InvPi;
 
-            var diffuse = hit.Material.Diffuse * (float)(1 / Math.PI);
+            Vector3 n = Vector3.Normalize(hit.Normal);
+            Vector3 wi = Vector3.Normalize(incoming);
+            Vector3 wo = Vector3.Normalize(outgoing);
 
-            if (Vector3.Dot(outgoing, dRef) > 1f - 0.01)
+            Vector3 dr = Vector3.Reflect(wi, n);
+
+            if (Vector3.Dot(wo, dr) > 1 - hit.Material.SpecularDistance)
             {
-                return diffuse + hit.Material.Specular * 10;
+                return diffuse + 10 * hit.Material.Specular;
             }
 
             return diffuse;
@@ -193,7 +201,7 @@ namespace RayTracing.Core
 
         private Vector3 RandomDirection(Vector3 normal)
         {
-            Vector3 rndD = new Vector3();
+            Vector3 rndD = new();
             do
             {
                 rndD = new(NextFloat(), NextFloat(), NextFloat());

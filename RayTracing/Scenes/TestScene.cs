@@ -40,7 +40,7 @@ namespace RayTracing.Objects
                 new Sphere(1000, new Vector3(0, 0, 1001), wallBack.Material),
                 new Sphere(1000, new Vector3(0, -1001, 0), floor.Material),
                 new Sphere(1000, new Vector3(0, 1001, 0), ceiling.Material),
-                new Sphere(0.3f, new Vector3(-0.6f, -0.7f, -0.6f), new(new(0.78f, 0.76f, 0.1f), Vector3.Zero, new(0.78f, 0.76f, 0.1f), 0.5f)),
+                new Sphere(0.3f, new Vector3(-0.6f, -0.7f, -0.6f), new(new(0.78f, 0.76f, 0.1f), Vector3.Zero, new(0.78f, 0.76f, 0.1f), 0.01f)),
                 new Sphere(0.6f, new Vector3(0.3f, -0.4f, 0.3f), circle2)
                 //new Sphere(0.8, new Vector3(-0.8f, 0.8f, 0.8f), new Vector3(0.85f, 0.55f, 0.03f)),
                 //animatedSphere,
