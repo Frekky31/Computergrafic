@@ -15,7 +15,14 @@ namespace RayTracing
         {
             RenderTarget renderTarget = new(600, 600);
 
-            Engine.Run(renderTarget, new TestScene(false, false), false);
+            RayTracer rayTracer = new()
+            {
+                MaxDepth = 5000,
+                SamplesPerPixel = 32,
+                Probability = 0.2f
+            };
+
+            Engine.Run(renderTarget, rayTracer, new TestScene(), false);
         }
     }
 }

@@ -15,7 +15,7 @@ namespace RayTracing.Core
     public class Engine
     {
 
-        public static void Run(RenderTarget target, Scene scene, bool run = false)
+        public static void Run(RenderTarget target, RayTracer rayTracer, Scene scene, bool run = false)
         {
             Raylib.SetConfigFlags(ConfigFlags.VSyncHint | ConfigFlags.ResizableWindow);
             Raylib.InitWindow(target.Width, target.Height, "Ray Tracing");
@@ -24,8 +24,6 @@ namespace RayTracing.Core
             Texture2D texture = Raylib.LoadTextureFromImage(img);
             Raylib.UnloadImage(img);
             Raylib.SetTextureFilter(texture, TextureFilter.Point);
-
-            RayTracing rayTracing = new();
 
             Color[] texColBuffer = new Color[target.Width * target.Height * 4];
             Raylib_cs.Rectangle src = new(0, texture.Height, texture.Width, -texture.Height);
@@ -39,7 +37,7 @@ namespace RayTracing.Core
                     if (run)
                         scene.Update(target, Raylib.GetFrameTime());
 
-                    rayTracing.Render(target, scene);
+                    rayTracer.Render(target, scene);
                     ToFlatByteArray(target, texColBuffer);
                     Raylib.UpdateTexture(texture, texColBuffer);
 
