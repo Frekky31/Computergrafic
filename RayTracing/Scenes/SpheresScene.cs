@@ -1,5 +1,6 @@
 ﻿using RayTracing.Core;
 using RayTracing.Objects;
+using RayTracing.Texture;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -20,10 +21,10 @@ namespace RayTracing.Scenes
                 Emission = new Vector3(2, 2, 2)
             };
 
-            Material m_wallLeft = new(new(0.7f, 0.07f, 0.03f));
-            Material m_wallRight = new(new(0.09f, 0.04f, 0.7f));
-            Material m_wallBack = new(new(0.6f, 0.6f, 0.6f));
-            Material m_floor = new(new(0.6f, 0.6f, 0.6f));
+            Material m_wallLeft = new() { Diffuse = new(0.7f, 0.07f, 0.03f) };
+            Material m_wallRight = new() { Diffuse = new(0.09f, 0.04f, 0.7f) };
+            Material m_wallBack = new() { Diffuse = new(0.6f, 0.6f, 0.6f) };
+            Material m_floor = new() { Diffuse = new(0.6f, 0.6f, 0.6f) };
 
 
             Material m_cube1 = new() { Specular = new(0.78f, 0.76f, 0.1f), Diffuse = new(0.78f, 0.76f, 0.1f), SpecularDistance = 0.01f };

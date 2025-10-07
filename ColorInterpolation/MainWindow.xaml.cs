@@ -53,10 +53,12 @@ namespace ColorInterpolation
 
         public Vector3 GetColor(float x, float y)
         {
+            // Map x and y from [0, ImageWidth-1] and [0, ImageHeight-1] to [0, 1]
+            float u = x / (ImageWidth - 1);
+            float v = y / (ImageHeight - 1);
 
-            var f = MathF.Sin(x / 10f) + MathF.Sin(y / 10f);
-            return new Vector3(f*3, MathF.Sin(f * 3 + 2), MathF.Sin(f * 3 + 10)
-                );
+            var f = MathF.Sin(u * MathF.PI) + MathF.Sin(v * MathF.PI);
+            return new Vector3(f * 0.5f + 0.5f, MathF.Sin(f * 3 + 2) * 0.5f + 0.5f, MathF.Sin(f * 3 + 10) * 0.5f + 0.5f);
         }
 
         public Vector3 GetColorSin(float x, float y)

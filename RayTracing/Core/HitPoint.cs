@@ -1,4 +1,6 @@
-﻿using System;
+﻿using RayTracing.Objects;
+using RayTracing.Texture;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
@@ -14,6 +16,7 @@ namespace RayTracing.Core
         public Vector3 Point { get; set; }
         public Vector3 Normal { get; set; }
         public Material Material { get; set; } = new();
+        public RenderObject RenderObject { get; set; } = null!;
 
     }
 }

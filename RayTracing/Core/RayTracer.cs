@@ -4,18 +4,12 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
-using System.Runtime.InteropServices;
-using System.Security.Cryptography;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows.Controls;
-using System.Windows.Media.Media3D;
+using RayTracing.Texture;
 
 namespace RayTracing.Core
 {
     public class RayTracer
     {
-        private readonly Random rnd = new();
         private const float kEps = 1e-4f;
         private Vector3 c_f;
         private Vector3 c_r;
@@ -28,6 +22,10 @@ namespace RayTracing.Core
         public int SamplesPerPixel { get; set; } = 1;
         public float Probability { get; set; } = 0.8f;
 
+        private static readonly ThreadLocal<Random> threadRng = new(() => new Random(Guid.NewGuid().GetHashCode()));
+
+        public Action<int, int>? ProgressCallback { get; set; }
+
         public RayTracer()
         {
         }
@@ -37,11 +35,11 @@ namespace RayTracing.Core
             c_f = Vector3.Normalize(Scene.Camera.LookAt - Scene.Camera.Position);
             c_r = Vector3.Normalize(Vector3.Cross(Scene.Camera.Up, c_f));
             c_u = Vector3.Normalize(Vector3.Cross(c_r, c_f));
-            c_scale = (float)Math.Tan(Scene.Camera.Fov * MathF.PI / 180f / 2);
-            Vector3 sampleBuffer = BackgroundColor;
+            c_scale = (float)MathF.Tan(Scene.Camera.Fov * MathF.PI / 180f / 2);
 
-
-            var threadRng = new ThreadLocal<Random>(() => new Random(Guid.NewGuid().GetHashCode()));
+            int totalRays = target.Width * target.Height;
+            int processedRays = 0;
+            int lastReported = 0;
 
             Parallel.For(0, target.Height, y =>
             {
@@ -49,6 +47,7 @@ namespace RayTracing.Core
                 for (int x = 0; x < target.Width; x++)
                 {
                     int index = y * target.Width + x;
+                    Vector3 sampleBuffer = BackgroundColor;
 
                     Vector2 pixel = new((2 * ((x + 0.5f) / target.Width) - 1) * (target.Width / (float)target.Height), py);
 
@@ -62,7 +61,15 @@ namespace RayTracing.Core
                     }
 
                     target.ColourBuffer[index] = sampleBuffer / SamplesPerPixel;
-                    sampleBuffer = BackgroundColor;
+
+                    // Progress reporting (every 1% or 1000 rays)
+                    int current = Interlocked.Increment(ref processedRays);
+                    if (ProgressCallback != null && (current - lastReported > totalRays / 100 || current == totalRays))
+                    {
+                        int prev = Interlocked.Exchange(ref lastReported, current);
+                        if (current - prev > 0)
+                            ProgressCallback(current, totalRays);
+                    }
                 }
             });
         }
@@ -80,7 +87,7 @@ namespace RayTracing.Core
                     closest = dist;
                     Vector3 p = o + dist * d;
                     var normal = Vector3.Normalize(p - sphere.Center);
-                    best = new HitPoint { DidHit = true, Material = sphere.Material, Distance = dist, Point = p, Normal = normal };
+                    best = new HitPoint { DidHit = true, Material = sphere.Material, Distance = dist, Point = p, Normal = normal, RenderObject = sphere };
                     found = true;
                 }
             }
@@ -93,7 +100,7 @@ namespace RayTracing.Core
                 if (TriangleRay(o, d, triangle, out var dist) && dist < closest)
                 {
                     closest = dist;
-                    best = new HitPoint { DidHit = true, Material = triangle.Material, Distance = dist, Point = o + dist * d, Normal = triangle.NormalUnit };
+                    best = new HitPoint { DidHit = true, Material = triangle.Material, Distance = dist, Point = o + dist * d, Normal = triangle.NormalUnit, RenderObject = triangle };
                     found = true;
                 }
             }
@@ -151,54 +158,6 @@ namespace RayTracing.Core
             return false;
         }
 
-        private Vector3 ComputeColorBRDF(Scene scene, Vector3 o, Vector3 d, int depth)
-        {
-            if (!FindClosestHitPoint(scene, o, d, out HitPoint? hit) || hit == null) return BackgroundColor;
-
-            if (rnd.NextDouble() < Probability || depth >= MaxDepth)
-            {
-                return hit.Material.Emission;
-            }
-
-            var rndD = RandomDirection(hit.Normal);
-            var nudge = kEps * hit.Normal;
-            var newOrigin = hit.Point + nudge;
-
-            var first = (float)(2 * Math.PI / (1 - Probability));
-            var second = Math.Max(0, Vector3.Dot(rndD, hit.Normal));
-            var brdf = BRDF(d, rndD, hit);
-            var recursion = ComputeColorBRDF(scene, newOrigin, rndD, depth + 1);
-            return hit.Material.Emission + first * second * Vector3.Multiply(brdf, recursion);
-        }
-
-        private Vector3 ComputeColor(Scene scene, Vector3 o, Vector3 d)
-        {
-            if (FindClosestHitPoint(scene, o, d, out HitPoint? hit))
-            {
-                return hit?.Material.Diffuse ?? BackgroundColor;
-            }
-
-            return BackgroundColor;
-        }
-
-        private static Vector3 BRDF(Vector3 incoming, Vector3 outgoing, HitPoint hit)
-        {
-            var diffuse = hit.Material.Diffuse * InvPi;
-
-            Vector3 n = Vector3.Normalize(hit.Normal);
-            Vector3 wi = Vector3.Normalize(incoming);
-            Vector3 wo = Vector3.Normalize(outgoing);
-
-            Vector3 dr = Vector3.Reflect(wi, n);
-
-            if (Vector3.Dot(wo, dr) > 1 - hit.Material.SpecularDistance)
-            {
-                return diffuse + 10 * hit.Material.Specular;
-            }
-
-            return diffuse;
-        }
-
         private Vector3 RandomDirection(Vector3 normal)
         {
             Vector3 rndD = new();
@@ -215,7 +174,102 @@ namespace RayTracing.Core
 
         public float NextFloat()
         {
-            return (float)((rnd.NextDouble() * 2) - 1);
+            return (float)(threadRng.Value.NextDouble() * 2 - 1);
+        }
+
+        private Vector3 ComputeColorBRDF(Scene scene, Vector3 o, Vector3 d, int depth)
+        {
+            if (!FindClosestHitPoint(scene, o, d, out HitPoint? hit) || hit == null) return BackgroundColor;
+
+            Vector3 emission = hit.Material.Emission;
+            if (hit.Material.Texture != null && hit.RenderObject is Sphere sphere)
+            {
+                Vector2 uv = GetSphereUV(hit.Point, sphere);
+                emission = SampleTexture(hit.Material, uv) * hit.Material.Emission;
+            }
+
+            if (threadRng.Value.NextDouble() < Probability || depth >= MaxDepth)
+            {
+                return emission;
+            }
+
+            var rndD = RandomDirection(hit.Normal);
+            var nudge = kEps * hit.Normal;
+            var newOrigin = hit.Point + nudge;
+
+            var first = (float)(2 * MathF.PI / (1 - Probability));
+            var second = MathF.Max(0, Vector3.Dot(rndD, hit.Normal));
+            var brdf = BRDF(d, rndD, hit);
+            var recursion = ComputeColorBRDF(scene, newOrigin, rndD, depth + 1);
+            return emission + first * second * Vector3.Multiply(brdf, recursion);
+        }
+
+        private Vector3 ComputeColor(Scene scene, Vector3 o, Vector3 d)
+        {
+            if (FindClosestHitPoint(scene, o, d, out HitPoint? hit))
+            {
+                return hit?.Material.Diffuse ?? BackgroundColor;
+            }
+
+            return BackgroundColor;
+        }
+
+        private Vector3 BRDF(Vector3 incoming, Vector3 outgoing, HitPoint hit)
+        {
+            Vector3 diffuse = hit.Material.Diffuse * InvPi;
+            Vector3 specular = hit.Material.Specular * InvPi;
+
+            if ((hit.Material.Texture != null || hit.Material.ProceduralTexture != null) && hit.RenderObject is Sphere sphere)
+            {
+                Vector2 uv = GetSphereUV(hit.Point, sphere);
+                var texColor = SampleTexture(hit.Material, uv) * InvPi;
+                diffuse = texColor + diffuse;
+                specular = texColor + specular;
+            }
+
+            Vector3 n = Vector3.Normalize(hit.Normal);
+            Vector3 wi = Vector3.Normalize(incoming);
+            Vector3 wo = Vector3.Normalize(outgoing);
+
+            Vector3 dr = Vector3.Reflect(wi, n);
+
+            if (Vector3.Dot(wo, dr) > 1 - hit.Material.SpecularDistance)
+            {
+                return diffuse + 10 * specular;
+            }
+
+            return diffuse;
+        }
+
+        private static Vector2 GetSphereUV(Vector3 point, Sphere sphere)
+        {
+            Vector3 p = Vector3.Normalize(point - sphere.Center);
+            float u = 0.5f + (float)(MathF.Atan2(p.Z, p.X) / (2 * MathF.PI));
+            float v = 0.5f - (float)(MathF.Asin(p.Y) * InvPi);
+            return new Vector2(u, v);
+        }
+
+        private Vector3 SampleTexture(Material material, Vector2 uv)
+        {
+            if (material.ProceduralTexture != null)
+                return material.ProceduralTexture(uv);
+
+            if (material.Texture != null)
+            {
+                lock (material.Texture)
+                {
+                    int x = Math.Clamp((int)(uv.X * material.Texture.Width), 0, material.Texture.Width - 1);
+                    int y = Math.Clamp((int)(uv.Y * material.Texture.Height), 0, material.Texture.Height - 1);
+                    var color = material.Texture.GetPixel(x, y);
+                    return new Vector3(
+                        (float)MathF.Pow(color.R / 255f, 2.2f),
+                        (float)MathF.Pow(color.G / 255f, 2.2f),
+                        (float)MathF.Pow(color.B / 255f, 2.2f)
+                    );
+                }
+            }
+
+            return material.Diffuse;
         }
     }
 }
