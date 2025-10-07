@@ -89,6 +89,14 @@ namespace RayTracing.Core
 
         public void BuildBVH(Scene scene)
         {
+            // Gather all triangles from all objects (including meshes)
+            var allTriangles = new List<Triangle>();
+            var allSpheres = new List<Sphere>();
+            foreach (var obj in scene.Objects)
+            {
+                allTriangles.AddRange(obj.GetTriangles().ToArray());
+                allSpheres.AddRange(obj.GetSpheres().ToArray());
+            }
             BVHTree = BVH.Build(scene.Triangles, scene.Spheres);
         }
 
@@ -182,7 +190,7 @@ namespace RayTracing.Core
 
         private Vector3 ComputeColor(Scene scene, Vector3 o, Vector3 d, int depth = 0)
         {
-            if (!FindClosestHitPoint(scene, o, d, out HitPoint? hit) || hit == null) return AmbientLight;
+            if (!FindClosestHitPointBVH(BVHTree, o, d, out HitPoint? hit) || hit == null) return AmbientLight;
 
             if ((BounceChance > 0f && (float)rnd.NextDouble() < BounceChance))
             {

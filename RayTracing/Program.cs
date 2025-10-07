@@ -21,10 +21,10 @@ namespace RayTracing
 
             RayTracer rayTracing = new()
             {
-                SamplesPerPixel = 128,
+                SamplesPerPixel = 8,
                 MaxRayBounces = 100000,
                 TileSize = 20,
-                BounceChance = 0.01f
+                BounceChance = 0.1f
             };
 
             Engine.Run(renderTarget, new CatScene(), rayTracing, false);
