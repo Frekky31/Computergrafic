@@ -8,16 +8,12 @@ namespace RayTracing.Objects
 {
     public class TextureScene : Scene
     {
-        Camera camera = new(new(-5, 6, -5), new(0, 1, 0), new(0, 1, 0), 36);
+        Camera camera = new(new(5, 6, 5), new(0, 1, 0), new(0, 1, 0), 40);
         Camera cameraPart2 = new(new(-0.9f, -0.5f, 0.9f), new(0, 0, 0), new(0, 1, 0), 110);
 
         public TextureScene()
         {
-            Rectangle wallLeft = new(new(-1, -1, -1), new(0f, 2f, 0f), new(0, 0, 10), new() { Diffuse = new(0.7f, 0.07f, 0.03f) });
-            Rectangle wallRight = new(new(1, -1, 1), new(0f, 2f, 0f), new(0, 0, -10), new() { Diffuse = new(0.09f, 0.04f, 0.7f) });
-            Rectangle wallBack = new(new(-1, -1, 1), new(0f, 2f, 0f), new(2, 0, 0), new() { Diffuse = new(0.09f, 0.7f, 0.02f) });
-            Rectangle floor = new(new(-10, 0, -10), new(20f, 0f, 0f), new(0, 0, 20), new() { Diffuse = new(0.6f, 0.6f, 0.6f) });
-            Rectangle ceiling = new(new(-1, 1, 1), new(2f, 0f, 0f), new(0, 0, -10), new() { Diffuse = new(0.6f, 0.6f, 0.6f), Emission = new(2, 2f, 2f) });
+            Material ceiling = new() { Diffuse = new(0.6f, 0.6f, 0.6f), Emission = new(2, 2f, 2f) };
 
             var texture = new Bitmap("Texture/bricks.jpg");
             var brickTexture = new Material() { Texture = texture };
@@ -31,7 +27,8 @@ namespace RayTracing.Objects
 
             Material procedural = new()
             {
-                ProceduralTexture = (uv) => {
+                ProceduralTexture = (uv) =>
+                {
                     uv = new Vector2(uv.X % 1.0f, uv.Y % 1.0f);
                     if (uv.X < 0) uv.X += 1.0f;
                     if (uv.Y < 0) uv.Y += 1.0f;
@@ -63,7 +60,8 @@ namespace RayTracing.Objects
 
             Material procedural2 = new()
             {
-                ProceduralTexture = (uv) => {
+                ProceduralTexture = (uv) =>
+                {
                     // Rotate UV by 180 degrees
                     uv = new Vector2(1.0f - uv.X, 1.0f - uv.Y);
 
@@ -84,21 +82,33 @@ namespace RayTracing.Objects
 
             Spheres.AddRange(
             [
-                //new Sphere(0.3f, new Vector3(-0.6f, -0.7f, -0.6f), circle),
-                new Sphere(0.6f, new Vector3(-1.5f, 0.6f, 0f), brickTexture),
-                new Sphere(0.6f, new Vector3(0f, 0.6f, 0f), brickTextureSpecular),
-                new Sphere(0.6f, new Vector3(1.5f, 0.6f, 0f), brickTextureEmissive),
-                new Sphere(0.6f, new Vector3(3f, 0.6f, 0f), procedural2),
+                new Sphere(0.6f, new Vector3(1.5f, 0.6f, 0.5f), brickTexture),
+                new Sphere(0.6f, new Vector3(0f, 0.6f, 0.5f), brickTextureSpecular),
+                new Sphere(0.6f, new Vector3(-1.5f, 0.6f, 0.5f), brickTextureEmissive),
+                new Sphere(0.6f, new Vector3(-3f, 0.6f, 0.5f), procedural2),
 
-                new Sphere(0.6f, new Vector3(-1.5f, 0.6f, 1.5f), diffuseTexture),
-                new Sphere(0.6f, new Vector3(0f, 0.6f, 1.5f), specularTexture),
-                new Sphere(0.6f, new Vector3(1.5f, 0.6f, 1.5f), specularTexture2),
+                new Sphere(0.6f, new Vector3(1.5f, 0.6f, -1f), diffuseTexture),
+                new Sphere(0.6f, new Vector3(0f, 0.6f, -1f), specularTexture),
+                new Sphere(0.6f, new Vector3(-1.5f, 0.6f, -1f), specularTexture2),
 
 
-                new Sphere(10, new Vector3(0, 16, -7), ceiling.Material)
+                new Sphere(10, new Vector3(4, 18, 9), ceiling)
             ]);
 
+            Material catMat = new()
+            {
+                Specular = new(0.95f, 0.48f, 0.78f),
+                Diffuse = new(0.95f, 0.48f, 0.78f),
+                SpecularDistance = 0.01f
+            };
+            Mesh cat = ObjImporter.LoadObj("Meshes/cat.obj", catMat, false);
+            cat.Move(new Vector3(-1700f, 155f, -1700f));
+            cat.Rotate(Quaternion.CreateFromAxisAngle(new Vector3(0, 1, 0), MathF.PI / 6));
+            cat.Scale(0.003f);
+
+            Rectangle floor = new(new(-10, 0, -10), new(20f, 0f, 0f), new(0, 0, 20), new() { Diffuse = new(0.5f, 0.5f, 0.5f) });
             Triangles.AddRange(floor.Triangles);
+            Triangles.AddRange(cat.Triangles);
 
 
 

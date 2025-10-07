@@ -16,7 +16,7 @@ namespace RayTracing.Core
     public class Engine
     {
 
-        public static void Run(RenderTarget target, RayTracer rayTracer, Scene scene, bool run = false)
+        public static void Run(RenderTarget target, Scene scene, RayTracer rayTracer)
         {
             Raylib.SetConfigFlags(ConfigFlags.VSyncHint | ConfigFlags.ResizableWindow);
             Raylib.InitWindow(target.Width, target.Height, "Ray Tracing");
@@ -33,11 +33,8 @@ namespace RayTracing.Core
 
             while (!Raylib.WindowShouldClose())
             {
-                if (Raylib.IsWindowResized() || run || !firstFrameDrawn)
+                if (Raylib.IsWindowResized() || !firstFrameDrawn)
                 {
-                    if (run)
-                        scene.Update(target, Raylib.GetFrameTime());
-
                     rayTracer.Render(target, scene);
                     ToFlatByteArray(target, texColBuffer);
                     Raylib.UpdateTexture(texture, texColBuffer);
@@ -47,18 +44,15 @@ namespace RayTracing.Core
                     Raylib.DrawTexturePro(texture, src, dest, origin, 0.0f, Color.White);
                     Raylib.EndDrawing();
 
-                    firstFrameDrawn = true; 
-                    if (!run)
-                    {
-                        if (!Directory.Exists("Pictures"))
-                            Directory.CreateDirectory("Pictures");
-                        Image screenshot = Raylib.LoadImageFromTexture(texture);
+                    firstFrameDrawn = true;
+                    if (!Directory.Exists("Pictures"))
+                        Directory.CreateDirectory("Pictures");
+                    Image screenshot = Raylib.LoadImageFromTexture(texture);
 
-                        Raylib.ImageFlipVertical(ref screenshot);
+                    Raylib.ImageFlipVertical(ref screenshot);
 
-                        Raylib.ExportImage(screenshot, $"Pictures/output-{DateTime.Now:yyyyMMddHHmm}.png");
-                        Raylib.UnloadImage(screenshot);
-                    }
+                    Raylib.ExportImage(screenshot, $"Pictures/output-{DateTime.Now:yyyyMMddHHmm}.png");
+                    Raylib.UnloadImage(screenshot);
                 }
                 else
                 {

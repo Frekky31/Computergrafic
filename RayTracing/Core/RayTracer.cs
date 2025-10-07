@@ -1,8 +1,5 @@
 ﻿using RayTracing.Objects;
 using RayTracing.Scenes;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Numerics;
 using RayTracing.Texture;
 
@@ -16,6 +13,7 @@ namespace RayTracing.Core
         private Vector3 c_u;
         private float c_scale;
         const float InvPi = 1f / MathF.PI;
+        public BVHNode? BVH;
 
         public Vector3 BackgroundColor { get; set; } = new(0.1f, 0.1f, 0.1f);
         public int MaxDepth { get; set; } = 5;
@@ -32,6 +30,7 @@ namespace RayTracing.Core
 
         public void Render(RenderTarget target, Scene Scene)
         {
+            BuildBVH(Scene);
             c_f = Vector3.Normalize(Scene.Camera.LookAt - Scene.Camera.Position);
             c_r = Vector3.Normalize(Vector3.Cross(Scene.Camera.Up, c_f));
             c_u = Vector3.Normalize(Vector3.Cross(c_r, c_f));
@@ -74,112 +73,30 @@ namespace RayTracing.Core
             });
         }
 
-        private bool FindClosestHitPoint(in Scene s, in Vector3 o, in Vector3 d, out HitPoint? hit)
+        public void BuildBVH(Scene scene)
         {
-            float closest = float.PositiveInfinity;
-            HitPoint? best = default;
-            bool found = false;
-
-            foreach (var sphere in s.Spheres)
+            // Gather all triangles from all objects (including meshes)
+            var allTriangles = new List<Triangle>();
+            var allSpheres = new List<Sphere>();
+            foreach (var obj in scene.Triangles)
             {
-                if (SphereRay(o, d, sphere, out var dist) && dist < closest)
-                {
-                    closest = dist;
-                    Vector3 p = o + dist * d;
-                    var normal = Vector3.Normalize(p - sphere.Center);
-                    best = new HitPoint { DidHit = true, Material = sphere.Material, Distance = dist, Point = p, Normal = normal, RenderObject = sphere };
-                    found = true;
-                }
+                allTriangles.AddRange(obj.GetTriangles().ToArray());
             }
-
-            foreach (var triangle in s.Triangles)
+            foreach (var obj in scene.Spheres)
             {
-                if (Vector3.Dot(d, triangle.NormalUnit) >= 0f)
-                    continue;
-
-                if (TriangleRay(o, d, triangle, out var dist) && dist < closest)
-                {
-                    closest = dist;
-                    best = new HitPoint { DidHit = true, Material = triangle.Material, Distance = dist, Point = o + dist * d, Normal = triangle.NormalUnit, RenderObject = triangle };
-                    found = true;
-                }
+                allSpheres.AddRange(obj.GetSpheres().ToArray());
             }
-
-            hit = best;
-
-            return found;
+            BVH = BVHTree.Build(scene.Triangles, scene.Spheres);
         }
 
-        private bool SphereRay(Vector3 o, Vector3 d, Sphere sphere, out float t)
-        {
-            Vector3 oc = o - sphere.Center;
-            float b = Vector3.Dot(oc, d);
-            float c = Vector3.Dot(oc, oc) - (float)(sphere.Radius * sphere.Radius);
-            float discriminant = b * b - c;
-            t = float.MaxValue;
-
-            if (discriminant < 0)
-                return false;
-
-            float sqrtD = MathF.Sqrt(discriminant);
-            float t1 = -b - sqrtD;
-            float t2 = -b + sqrtD;
-
-            t = (t1 > 0f) ? t1 : ((t2 > 0f) ? t2 : 0f);
-            if (t <= 0f) { return false; }
-            return true;
-        }
-
-        private bool TriangleRay(Vector3 o, Vector3 d, Triangle triangle, out float t)
-        {
-            Vector3 edgeAB = triangle.B - triangle.A;
-            Vector3 edgeAC = triangle.C - triangle.A;
-
-            Vector3 normalVector = Vector3.Cross(edgeAB, edgeAC);
-            Vector3 ao = o - triangle.A;
-            Vector3 dao = Vector3.Cross(ao, d);
-
-            float determinant = -Vector3.Dot(d, normalVector);
-            t = float.MaxValue;
-            if (MathF.Abs(determinant) < 1e-8f) return false;
-            float invDet = 1f / determinant;
-
-            float dst = Vector3.Dot(ao, normalVector) * invDet;
-            float u = Vector3.Dot(edgeAC, dao) * invDet;
-            float v = -Vector3.Dot(edgeAB, dao) * invDet;
-            float w = 1 - u - v;
-
-            if (dst > 1e-8f && u >= 0 && v >= 0 && w >= 0)
-            {
-                t = dst;
-                return true;
-            }
-
-            return false;
-        }
-
-        private Vector3 RandomDirection(Vector3 normal)
-        {
-            Vector3 rndD = new();
-            do
-            {
-                rndD = new(NextFloat(), NextFloat(), NextFloat());
-            } while (rndD.LengthSquared() > 1f);
-            if (Vector3.Dot(rndD, normal) < 0)
-            {
-                rndD = -rndD;
-            }
-            return Vector3.Normalize(rndD);
-        }
-
-        public float NextFloat()
-        {
-            return (float)(threadRng.Value.NextDouble() * 2 - 1);
-        }
-
+        /*
+         * 
+         * BRDF Path Tracing and Color Computation
+         * 
+         */
         private Vector3 ComputeColorBRDF(Scene scene, Vector3 o, Vector3 d, int depth)
         {
-            if (!FindClosestHitPoint(scene, o, d, out HitPoint? hit) || hit == null) return BackgroundColor;
+            if (!FindClosestHitPointBVH(BVH, o, d, out HitPoint? hit) || hit == null) return BackgroundColor;
 
             Vector3 emission = hit.Material.Emission;
             if (hit.Material.Texture != null && hit.RenderObject is Sphere sphere)
@@ -270,6 +187,166 @@ namespace RayTracing.Core
             }
 
             return material.Diffuse;
+        }
+
+        private Vector3 RandomDirection(Vector3 normal)
+        {
+            Vector3 rndD = new();
+            do
+            {
+                rndD = new(NextFloat(), NextFloat(), NextFloat());
+            } while (rndD.LengthSquared() > 1f);
+            if (Vector3.Dot(rndD, normal) < 0)
+            {
+                rndD = -rndD;
+            }
+            return Vector3.Normalize(rndD);
+        }
+
+        public float NextFloat()
+        {
+            return (float)(threadRng.Value.NextDouble() * 2 - 1);
+        }
+
+        /*
+         * 
+         * Hit Detection
+         * 
+         */
+        
+        private bool SphereRay(Vector3 o, Vector3 d, Sphere sphere, out float t)
+        {
+            Vector3 oc = o - sphere.Center;
+            float b = Vector3.Dot(oc, d);
+            float c = Vector3.Dot(oc, oc) - (float)(sphere.Radius * sphere.Radius);
+            float discriminant = b * b - c;
+            t = float.MaxValue;
+
+            if (discriminant < 0)
+                return false;
+
+            float sqrtD = MathF.Sqrt(discriminant);
+            float t1 = -b - sqrtD;
+            float t2 = -b + sqrtD;
+
+            t = (t1 > 0f) ? t1 : ((t2 > 0f) ? t2 : 0f);
+            if (t <= 0f) { return false; }
+            return true;
+        }
+        private bool TriangleRay(Vector3 o, Vector3 d, Triangle triangle, out float t)
+        {
+            Vector3 edgeAB = triangle.B - triangle.A;
+            Vector3 edgeAC = triangle.C - triangle.A;
+
+            Vector3 normalVector = Vector3.Cross(edgeAB, edgeAC);
+            Vector3 ao = o - triangle.A;
+            Vector3 dao = Vector3.Cross(ao, d);
+
+            float determinant = -Vector3.Dot(d, normalVector);
+            t = float.MaxValue;
+            if (MathF.Abs(determinant) < 1e-8f) return false;
+            float invDet = 1f / determinant;
+
+            float dst = Vector3.Dot(ao, normalVector) * invDet;
+            float u = Vector3.Dot(edgeAC, dao) * invDet;
+            float v = -Vector3.Dot(edgeAB, dao) * invDet;
+            float w = 1 - u - v;
+
+            if (dst > 1e-8f && u >= 0 && v >= 0 && w >= 0)
+            {
+                t = dst;
+                return true;
+            }
+
+            return false;
+        }
+
+        private bool FindClosestHitPointBVH(BVHNode? node, in Vector3 o, in Vector3 d, out HitPoint? hit)
+        {
+            hit = null;
+            float closest = float.PositiveInfinity;
+            HitPoint? best = null;
+            if (node == null) return false;
+            if (!node.Bounds.Intersect(o, d, out float tmin, out float tmax)) return false;
+            if (node.IsLeaf)
+            {
+                foreach (var sphere in node.Spheres ?? [])
+                {
+                    if (SphereRay(o, d, sphere, out var dist))
+                    {
+                        if (dist < closest)
+                        {
+                            closest = dist;
+                            Vector3 p = o + dist * d;
+                            var normal = Vector3.Normalize(p - sphere.Center);
+                            best = new HitPoint { DidHit = true, Material = sphere.Material, Distance = dist, Point = p, Normal = normal, RenderObject = sphere };
+                        }
+                    }
+                }
+                foreach (var triangle in node.Triangles ?? [])
+                {
+                    if (Vector3.Dot(d, triangle.NormalUnit) >= 0f) continue;
+                    if (TriangleRay(o, d, triangle, out var dist))
+                    {
+                        if (dist < closest)
+                        {
+                            closest = dist;
+                            best = new HitPoint { DidHit = true, Material = triangle.Material, Distance = dist, Point = o + dist * d, Normal = triangle.NormalUnit, RenderObject = triangle };
+                        }
+                    }
+                }
+                hit = best;
+                return best != null;
+            }
+            bool foundLeft = FindClosestHitPointBVH(node.Left, o, d, out HitPoint? hitLeft);
+            bool foundRight = FindClosestHitPointBVH(node.Right, o, d, out HitPoint? hitRight);
+            if (foundLeft && (!foundRight || hitLeft.Distance < hitRight.Distance))
+            {
+                hit = hitLeft;
+                return true;
+            }
+            if (foundRight)
+            {
+                hit = hitRight;
+                return true;
+            }
+            return false;
+        }
+        
+        private bool FindClosestHitPoint(in Scene s, in Vector3 o, in Vector3 d, out HitPoint? hit)
+        {
+            float closest = float.PositiveInfinity;
+            HitPoint? best = default;
+            bool found = false;
+
+            foreach (var sphere in s.Spheres)
+            {
+                if (SphereRay(o, d, sphere, out var dist) && dist < closest)
+                {
+                    closest = dist;
+                    Vector3 p = o + dist * d;
+                    var normal = Vector3.Normalize(p - sphere.Center);
+                    best = new HitPoint { DidHit = true, Material = sphere.Material, Distance = dist, Point = p, Normal = normal, RenderObject = sphere };
+                    found = true;
+                }
+            }
+
+            foreach (var triangle in s.Triangles)
+            {
+                if (Vector3.Dot(d, triangle.NormalUnit) >= 0f)
+                    continue;
+
+                if (TriangleRay(o, d, triangle, out var dist) && dist < closest)
+                {
+                    closest = dist;
+                    best = new HitPoint { DidHit = true, Material = triangle.Material, Distance = dist, Point = o + dist * d, Normal = triangle.NormalUnit, RenderObject = triangle };
+                    found = true;
+                }
+            }
+
+            hit = best;
+
+            return found;
         }
     }
 }

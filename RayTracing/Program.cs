@@ -18,16 +18,16 @@ namespace RayTracing
 
             RayTracer rayTracer = new()
             {
-                SamplesPerPixel = 128,
+                SamplesPerPixel = 32,
                 MaxDepth = 20,
-                Probability = 0.2f,
+                Probability = 0.25f,
                 ProgressCallback = (current, total) =>
                     {
                         System.Diagnostics.Debug.WriteLine($"Progress: {current} / {total} rays ({current * 100 / total}%)");
                     }
             };
 
-            Engine.Run(renderTarget, rayTracer, new TextureScene(), false);
+            Engine.Run(renderTarget, new TextureScene(), rayTracer);
         }
     }
 }

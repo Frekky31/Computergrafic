@@ -27,7 +27,9 @@ namespace RayTracing.Objects
             EdgeAB = B - A;
             EdgeAC = C - A;
             NormalUnit = -Vector3.Normalize(Vector3.Cross(EdgeAB, EdgeAC));
+            Material = material;
         }
+
 
         public override Span<Triangle> GetTriangles()
         {
