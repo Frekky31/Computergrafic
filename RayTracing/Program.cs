@@ -23,7 +23,7 @@ namespace RayTracing
                 Probability = 0.25f,
                 ProgressCallback = (current, total) =>
                     {
-                        System.Diagnostics.Debug.WriteLine($"Progress: {current} / {total} rays ({current * 100 / total}%)");
+                        System.Diagnostics.Debug.WriteLine($"Progress: {current} / {total} pixels ({current * 100 / total}%)");
                     }
             };
 

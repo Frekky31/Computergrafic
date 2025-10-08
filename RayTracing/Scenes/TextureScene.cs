@@ -16,9 +16,11 @@ namespace RayTracing.Objects
             Material ceiling = new() { Diffuse = new(0.6f, 0.6f, 0.6f), Emission = new(2, 2f, 2f) };
 
             var texture = new Bitmap("Texture/bricks.jpg");
-            var brickTexture = new Material() { Texture = texture };
+            var texture2 = new Bitmap("Texture/wood_inlaid_stone_wall_diff_4k.jpg");
+            var brickTexture = new Material() { Texture = texture, Diffuse = Vector3.One };
+            var wallTexture = new Material() { Texture = texture2, Diffuse = Vector3.One };
             var brickTextureEmissive = new Material() { Texture = texture, Emission = new(1, 1, 1) };
-            var brickTextureSpecular = new Material() { Texture = texture, Specular = new(1, 1, 1f), SpecularDistance = 0.06f };
+            var brickTextureSpecular = new Material() { Texture = texture, Diffuse = Vector3.One, Specular = new(1, 1, 1f), SpecularDistance = 0.06f };
 
             var diffuseTexture = new Material() { Diffuse = new(0.1f, 0.8f, 0.1f) };
             var specularTexture = new Material() { Diffuse = new(0.1f, 0.8f, 0.1f), Specular = new(0.1f, 0.8f, 0.1f), SpecularDistance = 0.06f };
@@ -78,6 +80,14 @@ namespace RayTracing.Objects
                 }
             };
 
+            Material procedural3 = new()
+            {
+                ProceduralTexture = (uv) =>
+                {
+                    return LavaLampTexture.Sample(uv);
+                }
+            };
+
 
 
             Spheres.AddRange(
@@ -85,11 +95,12 @@ namespace RayTracing.Objects
                 new Sphere(0.6f, new Vector3(1.5f, 0.6f, 0.5f), brickTexture),
                 new Sphere(0.6f, new Vector3(0f, 0.6f, 0.5f), brickTextureSpecular),
                 new Sphere(0.6f, new Vector3(-1.5f, 0.6f, 0.5f), brickTextureEmissive),
-                new Sphere(0.6f, new Vector3(-3f, 0.6f, 0.5f), procedural2),
+                new Sphere(0.6f, new Vector3(-3f, 0.6f, 0.5f), procedural3),
 
                 new Sphere(0.6f, new Vector3(1.5f, 0.6f, -1f), diffuseTexture),
                 new Sphere(0.6f, new Vector3(0f, 0.6f, -1f), specularTexture),
                 new Sphere(0.6f, new Vector3(-1.5f, 0.6f, -1f), specularTexture2),
+                new Sphere(0.6f, new Vector3(-3f, 0.6f, -1f), wallTexture),
 
 
                 new Sphere(10, new Vector3(4, 18, 9), ceiling)
@@ -108,11 +119,20 @@ namespace RayTracing.Objects
 
             Rectangle floor = new(new(-10, 0, -10), new(20f, 0f, 0f), new(0, 0, 20), new() { Diffuse = new(0.5f, 0.5f, 0.5f) });
             Triangles.AddRange(floor.Triangles);
-            Triangles.AddRange(cat.Triangles);
+            //Triangles.AddRange(cat.Triangles);
 
 
 
             Camera = camera;
+
+            var (hdrData, hdrWidth, hdrHeight) = HDRLoader.LoadEXR("Texture/horn-koppe_spring_4k.hdr");
+            var hdrMaterial = new Material
+            {
+                HDRTexture = hdrData,
+                HDRWidth = hdrWidth,
+                HDRHeight = hdrHeight
+            };
+            Spheres.Add(new Sphere(0.6f, new Vector3(0, 0.6f, 2.0f), hdrMaterial));
         }
 
         public float elapsedTime { get; set; } = 0;
