@@ -110,7 +110,6 @@ namespace RayTracing.Objects
                     ) * 0.5f + new Vector3(0.5f);
                 }
             };
-
             Material procedural8 = new()
             {
                 Emission = Vector3.One,
@@ -128,6 +127,18 @@ namespace RayTracing.Objects
                         MathF.Sin(f * 3 + 2) * 0.5f + 0.5f,
                         MathF.Sin(f * 3 + 10) * 0.5f + 0.5f
                     );
+                }
+            };
+            
+            Material procedural9 = new()
+            {
+                Emission = Vector3.One * 0.5f,
+                ProceduralTexture = (uv) =>
+                {
+                    uv *= 5.4f;
+                    Vector2 frag = new Vector2(uv.X + 3.5f, uv.Y + 3.5f);
+                    Vector2 iChannel0_rg = new Vector2(0.5f, 0.5f);
+                    return StarfieldShader.Sample(frag, new Vector2(1000, 800), iChannel0_rg);
                 }
             };
 
@@ -152,6 +163,8 @@ namespace RayTracing.Objects
                 new Sphere(0.6f, new Vector3(0f, 0.6f, -1f), procedural6),
                 new Sphere(0.6f, new Vector3(-1.5f, 0.6f, -1f), procedural7),
                 new Sphere(0.6f, new Vector3(-3f, 0.6f, -1f), procedural8),
+                
+                new Sphere(0.6f, new Vector3(1.5f, 0.6f, -2.5f), procedural9),
 
                 new Sphere(20f, new Vector3(0, 0f, 0f), hdrMaterial),
                 //new Sphere(10, new Vector3(4, 18, 9), ceiling)
@@ -159,8 +172,8 @@ namespace RayTracing.Objects
 
             Material catMat = new()
             {
-                Specular = new(0.95f, 0.48f, 0.78f),
-                Diffuse = new(0.95f, 0.48f, 0.78f),
+                Specular = new(0.97f, 0.002f, 0.298f),
+                Diffuse = new(0.97f, 0.002f, 0.298f),
                 SpecularDistance = 0.01f
             };
             Mesh cat = ObjImporter.LoadObj("Meshes/cat.obj", catMat, false);
@@ -170,9 +183,7 @@ namespace RayTracing.Objects
 
             Rectangle floor = new(new(-10, 0, -10), new(20f, 0f, 0f), new(0, 0, 20), new() { Diffuse = new(0.5f, 0.5f, 0.5f) });
             Triangles.AddRange(floor.Triangles);
-            Triangles.AddRange(cat.Triangles);
-
-
+            //Triangles.AddRange(cat.Triangles);
 
             Camera = camera;
         }

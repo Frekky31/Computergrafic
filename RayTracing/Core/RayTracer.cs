@@ -14,15 +14,15 @@ namespace RayTracing.Core
         private Vector3 c_u;
         private float c_scale;
         private const float InvPi = 1f / MathF.PI;
-        public BVHNode? BVH;
+        private BVHNode? BVH;
+        private static readonly ThreadLocal<Random> threadRng = new(() => new Random(Guid.NewGuid().GetHashCode()));
 
+        public bool UseBVH { get; set; } = true;
+        public bool UseBRDF { get; set; } = true;
         public Vector3 BackgroundColor { get; set; } = new(0.1f, 0.1f, 0.1f);
         public int MaxDepth { get; set; } = 5;
         public int SamplesPerPixel { get; set; } = 1;
         public float Probability { get; set; } = 0.8f;
-
-        private static readonly ThreadLocal<Random> threadRng = new(() => new Random(Guid.NewGuid().GetHashCode()));
-
         public Action<int, int>? ProgressCallback { get; set; }
 
         public RayTracer()
@@ -31,7 +31,8 @@ namespace RayTracing.Core
 
         public void Render(RenderTarget target, Scene Scene)
         {
-            BuildBVH(Scene);
+            if (UseBVH)
+                BuildBVH(Scene);
             c_f = Vector3.Normalize(Scene.Camera.LookAt - Scene.Camera.Position);
             c_r = Vector3.Normalize(Vector3.Cross(Scene.Camera.Up, c_f));
             c_u = Vector3.Normalize(Vector3.Cross(c_r, c_f));
@@ -40,7 +41,7 @@ namespace RayTracing.Core
             int totalRays = target.Width * target.Height;
             int processedRays = 0;
             int lastReported = 0;
-
+            SamplesPerPixel = !UseBRDF ? 1 : SamplesPerPixel;
             Parallel.ForEach(Partitioner.Create(0, target.Height), (range, state) =>
             {
                 Vector3[] localBuffer = new Vector3[target.Width];
@@ -62,7 +63,10 @@ namespace RayTracing.Core
                         Vector3 d = Vector3.Normalize(c_f + beta * c_u + omega * c_r);
                         for (int i = 0; i < SamplesPerPixel; i++)
                         {
-                            sampleBuffer += ComputeColorBRDF(Scene, Scene.Camera.Position, d, 0);
+                            if (UseBRDF)
+                                sampleBuffer += ComputeColorBRDF(Scene, Scene.Camera.Position, d, 0);
+                            else
+                                sampleBuffer += ComputeColor(Scene, Scene.Camera.Position, d, 0);
                         }
 
                         localBuffer[x] = sampleBuffer / SamplesPerPixel;
@@ -106,8 +110,15 @@ namespace RayTracing.Core
          */
         private Vector3 ComputeColorBRDF(Scene scene, Vector3 o, Vector3 d, int depth)
         {
-            if (!FindClosestHitPointBVH(BVH, o, d, out HitPoint? optionalHit) || !optionalHit.HasValue) return BackgroundColor;
-
+            HitPoint? optionalHit = null;
+            if (UseBVH && !FindClosestHitPointBVH(BVH, o, d, out optionalHit) || !optionalHit.HasValue)
+            {
+                return BackgroundColor;
+            }
+            else if (!FindClosestHitPoint(scene, o, d, out optionalHit) || !optionalHit.HasValue)
+            {
+                return BackgroundColor;
+            }
             var hit = optionalHit.Value;
             Vector3 emission = hit.Material.Emission;
             if (hit.Material.HasTexture && hit.RenderObject is Sphere sphere)
@@ -134,18 +145,23 @@ namespace RayTracing.Core
 
         private Vector3 ComputeColor(Scene scene, Vector3 o, Vector3 d, int depth)
         {
-            if (FindClosestHitPoint(scene, o, d, out HitPoint? optionalHit) && optionalHit.HasValue)
+            HitPoint? optionalHit = null;
+            if (UseBVH && !FindClosestHitPointBVH(BVH, o, d, out optionalHit) || !optionalHit.HasValue)
             {
-                var hit = optionalHit.Value;
-                if (hit.Material.HasTexture && hit.RenderObject is Sphere sphere)
-                {
-                    Vector2 uv = Sphere.GetSphereUV(hit.Point, sphere);
-                    return Material.SampleTexture(hit.Material, uv) * hit.Material.Diffuse;
-                }
-                return hit.Material.Diffuse;
+                return BackgroundColor;
+            }
+            else if (!FindClosestHitPoint(scene, o, d, out optionalHit) || !optionalHit.HasValue)
+            {
+                return BackgroundColor;
             }
 
-            return BackgroundColor;
+            var hit = optionalHit.Value;
+            if (hit.Material.HasTexture && hit.RenderObject is Sphere sphere)
+            {
+                Vector2 uv = Sphere.GetSphereUV(hit.Point, sphere);
+                return Material.SampleTexture(hit.Material, uv) * hit.Material.Diffuse;
+            }
+            return hit.Material.Diffuse;
         }
 
         private static Vector3 BRDF(Vector3 incoming, Vector3 outgoing, HitPoint hit)

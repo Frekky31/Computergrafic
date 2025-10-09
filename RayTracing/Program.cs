@@ -25,6 +25,8 @@ namespace RayTracing
                 SamplesPerPixel = 32,
                 MaxDepth = 20,
                 Probability = 0.25f,
+                UseBVH = true,
+                UseBRDF = true,
                 ProgressCallback = (current, total) =>
                     {
                         Console.WriteLine($"Progress: {current} / {total} pixels ({current * 100 / total}%)");

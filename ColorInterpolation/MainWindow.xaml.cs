@@ -1,4 +1,6 @@
-﻿using System.Numerics;
+﻿using RayTracing.Texture;
+using System.Numerics;
+using System.Reflection;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
@@ -7,9 +9,9 @@ using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using System.Windows.Media.Media3D;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
-using RayTracing.Texture;
 
 namespace ColorInterpolation
 {
@@ -23,8 +25,8 @@ namespace ColorInterpolation
         private readonly WriteableBitmap bitmap = new(ImageWidth, ImageHeight, 96, 96, PixelFormats.Bgra32, null);
         private readonly Vector3[] pixelColors = new Vector3[ImageWidth * ImageHeight];
 
-        private Vector3 Color1 = new(0f, 1f, 1f);
-        private Vector3 Color2 = new(0f, 1f, 0f);
+        private Vector3 Color2 = new(0f, 0f, 0f);
+        private Vector3 Color1 = new(1f, 1f, 1f);
 
         public MainWindow()
         {
@@ -58,23 +60,10 @@ namespace ColorInterpolation
 
         public Vector3 GetColor(Vector2 uv)
         {
-
-            // x and y are expected to be in the range [0, 1]
-
-            var f = MathF.Sin(uv.X * 30) + MathF.Sin(uv.Y * 30);
-            return new Vector3(
-                f * 0.5f + 0.5f,
-                MathF.Sin(f * 3 + 2) * 0.5f + 0.5f,
-                MathF.Sin(f * 3 + 10) * 0.5f + 0.5f
-            );
-            return WoodTexture.Sample(uv, 0.01f);
-            // Map x and y from [0, ImageWidth-1] and [0, ImageHeight-1] to [0, 1]
-            float scale = 0.07f;
-
-            // Smoother: average several nearby samples
-            float v = CellularNoise2D.Cellular(uv * scale);
-
-            return new Vector3(v);
+            uv *= 5f;
+            Vector2 frag = new Vector2(uv.X + 3.5f, uv.Y + 3.5f);
+            Vector2 iChannel0_rg = new Vector2(0.5f, 0.5f);
+            return StarfieldShader.Sample(frag, new Vector2(ImageWidth, ImageHeight), iChannel0_rg);
         }
 
         public Vector3 GetColorSin(float x, float y)
@@ -98,9 +87,9 @@ namespace ColorInterpolation
 
                 int baseIndex = i * 4;
                 pixels[baseIndex + 0] = b;
-                pixels[baseIndex + 1] = g; 
-                pixels[baseIndex + 2] = r; 
-                pixels[baseIndex + 3] = a; 
+                pixels[baseIndex + 1] = g;
+                pixels[baseIndex + 2] = r;
+                pixels[baseIndex + 3] = a;
             }
 
             Int32Rect rect = new(0, 0, ImageWidth, ImageHeight);

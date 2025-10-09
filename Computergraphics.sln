@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ColorInterpolation", "Color
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RayTracing", "RayTracing\RayTracing.csproj", "{45FFB3EC-EB1F-4BDD-9362-F9E8241600D5}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PostProcessing", "PostProcessing\PostProcessing.csproj", "{C149EDF4-02B7-4A28-B0DB-C0E4804E9E3C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{45FFB3EC-EB1F-4BDD-9362-F9E8241600D5}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{45FFB3EC-EB1F-4BDD-9362-F9E8241600D5}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{45FFB3EC-EB1F-4BDD-9362-F9E8241600D5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C149EDF4-02B7-4A28-B0DB-C0E4804E9E3C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C149EDF4-02B7-4A28-B0DB-C0E4804E9E3C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C149EDF4-02B7-4A28-B0DB-C0E4804E9E3C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C149EDF4-02B7-4A28-B0DB-C0E4804E9E3C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -96,7 +96,6 @@ namespace RayTracing.Objects
                 ProceduralTexture = (uv) =>
                 {
                     return BoxShader.Sample(uv, new(600,600), 15);
-                    return WoodTexture.Sample(uv, 0.1f);
                 }
             };
 
