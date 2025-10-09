@@ -9,6 +9,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using RayTracing.Texture;
 
 namespace ColorInterpolation
 {
@@ -53,12 +54,14 @@ namespace ColorInterpolation
 
         public Vector3 GetColor(float x, float y)
         {
+            return WoodTexture.Sample(new(x, y), 0.01f);
             // Map x and y from [0, ImageWidth-1] and [0, ImageHeight-1] to [0, 1]
-            float u = x / (ImageWidth - 1);
-            float v = y / (ImageHeight - 1);
+            float scale = 0.07f;
 
-            var f = MathF.Sin(u * MathF.PI) + MathF.Sin(v * MathF.PI);
-            return new Vector3(f * 0.5f + 0.5f, MathF.Sin(f * 3 + 2) * 0.5f + 0.5f, MathF.Sin(f * 3 + 10) * 0.5f + 0.5f);
+            // Smoother: average several nearby samples
+            float v = CellularNoise2D.Cellular(new(x * scale, y * scale));
+
+            return new Vector3(v);
         }
 
         public Vector3 GetColorSin(float x, float y)

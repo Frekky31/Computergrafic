@@ -27,7 +27,7 @@ namespace RayTracing
                     }
             };
 
-            Engine.Run(renderTarget, new TextureScene(), rayTracer);
+            Engine.Run(renderTarget, new ProceduralScene(), rayTracer);
         }
     }
 }

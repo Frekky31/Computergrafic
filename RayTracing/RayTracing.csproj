@@ -29,6 +29,9 @@
     <None Update="Texture\bricks.jpg">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Update="Texture\clarens_night_02_4k.hdr">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="Texture\horn-koppe_spring_4k.hdr">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

@@ -98,10 +98,10 @@ namespace RayTracing.Core
             if (!FindClosestHitPointBVH(BVH, o, d, out HitPoint? hit) || hit == null) return BackgroundColor;
 
             Vector3 emission = hit.Material.Emission;
-            if (hit.Material.Texture != null && hit.RenderObject is Sphere sphere)
+            if (hit.Material.HasTexture && hit.RenderObject is Sphere sphere)
             {
                 Vector2 uv = Sphere.GetSphereUV(hit.Point, sphere);
-                emission = Sphere.SampleTexture(hit.Material, uv) * hit.Material.Emission;
+                emission = Material.SampleTexture(hit.Material, uv) * hit.Material.Emission;
             }
 
             if (threadRng.Value!.NextDouble() < Probability || depth >= MaxDepth)
@@ -133,10 +133,10 @@ namespace RayTracing.Core
         private static Vector3 BRDF(Vector3 incoming, Vector3 outgoing, HitPoint hit)
         {
             Vector3 texColor = Vector3.One;
-            if ((hit.Material.Texture != null || hit.Material.ProceduralTexture != null) && hit.RenderObject is Sphere sphere)
+            if (hit.Material.HasTexture && hit.RenderObject is Sphere sphere)
             {
                 Vector2 uv = Sphere.GetSphereUV(hit.Point, sphere);
-                texColor = Sphere.SampleTexture(hit.Material, uv);
+                texColor = Material.SampleTexture(hit.Material, uv);
             }
 
             Vector3 diffuse = hit.Material.Diffuse * texColor * InvPi;
