@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -12,8 +13,11 @@ namespace RayTracing
 {
     public class Program
     {
+        [DllImport("kernel32.dll")]
+        private static extern bool AllocConsole();
         static void Main(string[] args)
         {
+            AllocConsole();
             RenderTarget renderTarget = new(600, 600);
 
             RayTracer rayTracer = new()
@@ -23,7 +27,7 @@ namespace RayTracing
                 Probability = 0.25f,
                 ProgressCallback = (current, total) =>
                     {
-                        System.Diagnostics.Debug.WriteLine($"Progress: {current} / {total} pixels ({current * 100 / total}%)");
+                        Console.WriteLine($"Progress: {current} / {total} pixels ({current * 100 / total}%)");
                     }
             };
 

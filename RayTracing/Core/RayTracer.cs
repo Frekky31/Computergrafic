@@ -2,6 +2,7 @@
 using RayTracing.Scenes;
 using System.Numerics;
 using RayTracing.Texture;
+using System.Collections.Concurrent;
 
 namespace RayTracing.Core
 {
@@ -40,34 +41,44 @@ namespace RayTracing.Core
             int processedRays = 0;
             int lastReported = 0;
 
-            Parallel.For(0, target.Height, y =>
+            Parallel.ForEach(Partitioner.Create(0, target.Height), (range, state) =>
             {
-                var py = 1 - 2 * ((y + 0.5f) / target.Height);
-                for (int x = 0; x < target.Width; x++)
+                Vector3[] localBuffer = new Vector3[target.Width];
+
+                for (int y = range.Item1; y < range.Item2; y++)
                 {
-                    int index = y * target.Width + x;
-                    Vector3 sampleBuffer = BackgroundColor;
-
-                    Vector2 pixel = new((2 * ((x + 0.5f) / target.Width) - 1) * (target.Width / (float)target.Height), py);
-
-                    float beta = c_scale * pixel.Y;
-                    float omega = c_scale * pixel.X;
-
-                    Vector3 d = Vector3.Normalize(c_f + beta * c_u + omega * c_r);
-                    for (int i = 0; i < SamplesPerPixel; i++)
+                    var py = 1 - 2 * ((y + 0.5f) / target.Height);
+                    for (int x = 0; x < target.Width; x++)
                     {
-                        sampleBuffer += ComputeColorBRDF(Scene, Scene.Camera.Position, d, 0);
+                        int index = y * target.Width + x;
+                        Vector3 sampleBuffer = BackgroundColor;
+
+                        float pixelX = (2 * ((x + 0.5f) / target.Width) - 1) * (target.Width / (float)target.Height);
+                        float pixelY = py;
+
+                        float beta = c_scale * pixelY;
+                        float omega = c_scale * pixelX;
+
+                        Vector3 d = Vector3.Normalize(c_f + beta * c_u + omega * c_r);
+                        for (int i = 0; i < SamplesPerPixel; i++)
+                        {
+                            sampleBuffer += ComputeColorBRDF(Scene, Scene.Camera.Position, d, 0);
+                        }
+
+                        localBuffer[x] = sampleBuffer / SamplesPerPixel;
+
+                        int current = Interlocked.Increment(ref processedRays);
+                        if (ProgressCallback != null && (current - lastReported > totalRays / 100 || current == totalRays))
+                        {
+                            int prev = Interlocked.Exchange(ref lastReported, current);
+                            if (current - prev > 0)
+                                ProgressCallback(current, totalRays);
+                        }
                     }
 
-                    target.ColourBuffer[index] = sampleBuffer / SamplesPerPixel;
-
-                    // Progress reporting (every 1% or 1000 rays)
-                    int current = Interlocked.Increment(ref processedRays);
-                    if (ProgressCallback != null && (current - lastReported > totalRays / 100 || current == totalRays))
+                    for (int x = 0; x < target.Width; x++)
                     {
-                        int prev = Interlocked.Exchange(ref lastReported, current);
-                        if (current - prev > 0)
-                            ProgressCallback(current, totalRays);
+                        target.ColourBuffer[y * target.Width + x] = localBuffer[x];
                     }
                 }
             });
@@ -95,8 +106,9 @@ namespace RayTracing.Core
          */
         private Vector3 ComputeColorBRDF(Scene scene, Vector3 o, Vector3 d, int depth)
         {
-            if (!FindClosestHitPointBVH(BVH, o, d, out HitPoint? hit) || hit == null) return BackgroundColor;
+            if (!FindClosestHitPointBVH(BVH, o, d, out HitPoint? optionalHit) || !optionalHit.HasValue) return BackgroundColor;
 
+            var hit = optionalHit.Value;
             Vector3 emission = hit.Material.Emission;
             if (hit.Material.HasTexture && hit.RenderObject is Sphere sphere)
             {
@@ -122,9 +134,15 @@ namespace RayTracing.Core
 
         private Vector3 ComputeColor(Scene scene, Vector3 o, Vector3 d, int depth)
         {
-            if (FindClosestHitPoint(scene, o, d, out HitPoint? hit))
+            if (FindClosestHitPoint(scene, o, d, out HitPoint? optionalHit) && optionalHit.HasValue)
             {
-                return hit?.Material.Diffuse ?? BackgroundColor;
+                var hit = optionalHit.Value;
+                if (hit.Material.HasTexture && hit.RenderObject is Sphere sphere)
+                {
+                    Vector2 uv = Sphere.GetSphereUV(hit.Point, sphere);
+                    return Material.SampleTexture(hit.Material, uv) * hit.Material.Diffuse;
+                }
+                return hit.Material.Diffuse;
             }
 
             return BackgroundColor;
@@ -237,33 +255,7 @@ namespace RayTracing.Core
             if (!node.Bounds.Intersect(o, d, out _, out _)) return false;
             if (node.IsLeaf)
             {
-                foreach (var sphere in node.Spheres ?? [])
-                {
-                    if (SphereRay(o, d, sphere, out var dist))
-                    {
-                        if (dist < closest)
-                        {
-                            closest = dist;
-                            Vector3 p = o + dist * d;
-                            var normal = Vector3.Normalize(p - sphere.Center);
-                            best = new HitPoint { DidHit = true, Material = sphere.Material, Distance = dist, Point = p, Normal = normal, RenderObject = sphere };
-                        }
-                    }
-                }
-                foreach (var triangle in node.Triangles ?? [])
-                {
-                    if (Vector3.Dot(d, triangle.NormalUnit) >= 0f) continue;
-                    if (TriangleRay(o, d, triangle, out var dist))
-                    {
-                        if (dist < closest)
-                        {
-                            closest = dist;
-                            best = new HitPoint { DidHit = true, Material = triangle.Material, Distance = dist, Point = o + dist * d, Normal = triangle.NormalUnit, RenderObject = triangle };
-                        }
-                    }
-                }
-                hit = best;
-                return best != null;
+                return ObjectHitpoint(node, o, d, out hit, ref closest, ref best);
             }
             bool foundLeft = FindClosestHitPointBVH(node.Left, o, d, out HitPoint? hitLeft);
             bool foundRight = FindClosestHitPointBVH(node.Right, o, d, out HitPoint? hitRight);
@@ -279,7 +271,35 @@ namespace RayTracing.Core
             }
             return false;
         }
-        
+
+        private static bool ObjectHitpoint(BVHNode node, Vector3 o, Vector3 d, out HitPoint? hit, ref float closest, ref HitPoint? best)
+        {
+            foreach (var sphere in node.Spheres ?? [])
+            {
+                if (SphereRay(o, d, sphere, out var dist) && dist < closest)
+                {
+                    closest = dist;
+                    Vector3 p = o + dist * d;
+                    var normal = Vector3.Normalize(p - sphere.Center);
+                    best = new HitPoint { DidHit = true, Material = sphere.Material, Distance = dist, Point = p, Normal = normal, RenderObject = sphere };
+                }
+            }
+            foreach (var triangle in node.Triangles ?? [])
+            {
+                if (Vector3.Dot(d, triangle.NormalUnit) >= 0f) continue;
+                if (TriangleRay(o, d, triangle, out var dist) && dist < closest)
+                {
+                    closest = dist;
+                    best = new HitPoint { DidHit = true, Material = triangle.Material, Distance = dist, Point = o + dist * d, Normal = triangle.NormalUnit, RenderObject = triangle };
+                }
+            }
+            hit = best;
+            return best != null;
+        }
+
+
+        // Version without BVH
+
         private static bool FindClosestHitPoint(in Scene s, in Vector3 o, in Vector3 d, out HitPoint? hit)
         {
             float closest = float.PositiveInfinity;

@@ -9,8 +9,12 @@ using System.Threading.Tasks;
 
 namespace RayTracing.Core
 {
-    public class HitPoint
+    public struct HitPoint
     {
+        public HitPoint()
+        {
+        }
+
         public bool DidHit { get; set; }
         public float Distance { get; set; }
         public Vector3 Point { get; set; }

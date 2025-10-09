@@ -55,12 +55,11 @@ namespace RayTracing.Objects
                     uv = new Vector2(uv.X % 1.0f, uv.Y % 1.0f);
                     if (uv.X < 0) uv.X += 1.0f;
                     if (uv.Y < 0) uv.Y += 1.0f;
-
-                    var f = MathF.Sin(uv.X * MathF.PI) + MathF.Sin(uv.Y * MathF.PI);
-                    return new Vector3(
-                        f * 0.5f + 0.5f,
-                        MathF.Sin(f * 3 + 2) * 0.5f + 0.5f,
-                        MathF.Sin(f * 3 + 10) * 0.5f + 0.5f
+                    var f = MathF.Sin(uv.X * 10f + MathF.Sin(uv.Y * 5f) * 5) * 5;
+                    return new(
+                        MathF.Sin(f) * 0.5f + 0.5f,
+                        MathF.Sin(f + 2) * 0.5f + 0.5f,
+                        MathF.Sin(f + 10) * 0.5f + 0.5f
                     );
                 }
             };
@@ -85,7 +84,7 @@ namespace RayTracing.Objects
             {
                 ProceduralTexture = (uv) =>
                 {
-                    return BoxShader.Sample(uv, new(800, 800), 1500f);
+                    return BoxShader.Sample(uv, new(1, 1), 1500f);
                 }
             };
 
@@ -93,7 +92,7 @@ namespace RayTracing.Objects
             {
                 ProceduralTexture = (uv) =>
                 {
-                    return TilePattern.Sample(uv, new(800, 800), 15f);
+                    return TilePattern.Sample(uv, new(0.6f, 0.6f), 14f);
                 }
             };
 
@@ -112,13 +111,33 @@ namespace RayTracing.Objects
                 }
             };
 
-            var (hdrData, hdrWidth, hdrHeight) = HDRLoader.LoadEXR("Texture/clarens_night_02_4k.hdr");
+            Material procedural8 = new()
+            {
+                Emission = Vector3.One,
+                ProceduralTexture = (uv) =>
+                {
+                    // Rotate UV by 180 degrees
+                    uv = new Vector2(1.0f - uv.X, 1.0f - uv.Y);
+
+                    uv = new Vector2(uv.X % 1.0f, uv.Y % 1.0f);
+                    if (uv.X < 0) uv.X += 1.0f;
+                    if (uv.Y < 0) uv.Y += 1.0f;
+                    var f = MathF.Sin(uv.X * 30) + MathF.Sin(uv.Y * 30);
+                    return new Vector3(
+                        f * 0.5f + 0.5f,
+                        MathF.Sin(f * 3 + 2) * 0.5f + 0.5f,
+                        MathF.Sin(f * 3 + 10) * 0.5f + 0.5f
+                    );
+                }
+            };
+
+            var (hdrData, hdrWidth, hdrHeight) = HDRLoader.LoadEXR("Texture/horn-koppe_spring_4k.hdr");
             var hdrMaterial = new Material
             {
                 HDRTexture = hdrData,
                 HDRWidth = hdrWidth,
                 HDRHeight = hdrHeight,
-                Emission = Vector3.One
+                Emission = Vector3.One * 1.2f
             };
 
 
@@ -132,6 +151,7 @@ namespace RayTracing.Objects
                 new Sphere(0.6f, new Vector3(1.5f, 0.6f, -1f), procedural5),
                 new Sphere(0.6f, new Vector3(0f, 0.6f, -1f), procedural6),
                 new Sphere(0.6f, new Vector3(-1.5f, 0.6f, -1f), procedural7),
+                new Sphere(0.6f, new Vector3(-3f, 0.6f, -1f), procedural8),
 
                 new Sphere(20f, new Vector3(0, 0f, 0f), hdrMaterial),
                 //new Sphere(10, new Vector3(4, 18, 9), ceiling)
@@ -144,13 +164,13 @@ namespace RayTracing.Objects
                 SpecularDistance = 0.01f
             };
             Mesh cat = ObjImporter.LoadObj("Meshes/cat.obj", catMat, false);
-            cat.Move(new Vector3(-1700f, 155f, -1700f));
-            cat.Rotate(Quaternion.CreateFromAxisAngle(new Vector3(0, 1, 0), MathF.PI / 6));
             cat.Scale(0.003f);
+            cat.Move(new Vector3(-1f, 0.6f, -5f));
+            cat.Rotate(Quaternion.CreateFromAxisAngle(new Vector3(0, 1, 0), MathF.PI / 6));
 
-            Rectangle floor = new(new(-5, 0, -5), new(8f, 0f, 0f), new(0, 0, 8), new() { Diffuse = new(0.5f, 0.5f, 0.5f) });
+            Rectangle floor = new(new(-10, 0, -10), new(20f, 0f, 0f), new(0, 0, 20), new() { Diffuse = new(0.5f, 0.5f, 0.5f) });
             Triangles.AddRange(floor.Triangles);
-            //Triangles.AddRange(cat.Triangles);
+            Triangles.AddRange(cat.Triangles);
 
 
 

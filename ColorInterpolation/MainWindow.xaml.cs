@@ -47,19 +47,32 @@ namespace ColorInterpolation
                 {
                     int index = i * ImageWidth + j;
 
-                    pixelColors[index] = GetColor(j, i);
+                    float u = (float)j / (ImageWidth - 1f);
+                    float v = (float)i / (ImageHeight - 1f);
+
+                    var uv = new Vector2(u, v);
+                    pixelColors[index] = GetColor(uv);
                 }
             }
         }
 
-        public Vector3 GetColor(float x, float y)
+        public Vector3 GetColor(Vector2 uv)
         {
-            return WoodTexture.Sample(new(x, y), 0.01f);
+
+            // x and y are expected to be in the range [0, 1]
+
+            var f = MathF.Sin(uv.X * 30) + MathF.Sin(uv.Y * 30);
+            return new Vector3(
+                f * 0.5f + 0.5f,
+                MathF.Sin(f * 3 + 2) * 0.5f + 0.5f,
+                MathF.Sin(f * 3 + 10) * 0.5f + 0.5f
+            );
+            return WoodTexture.Sample(uv, 0.01f);
             // Map x and y from [0, ImageWidth-1] and [0, ImageHeight-1] to [0, 1]
             float scale = 0.07f;
 
             // Smoother: average several nearby samples
-            float v = CellularNoise2D.Cellular(new(x * scale, y * scale));
+            float v = CellularNoise2D.Cellular(uv * scale);
 
             return new Vector3(v);
         }
