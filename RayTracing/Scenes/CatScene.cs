@@ -21,10 +21,25 @@ namespace RayTracing.Objects
                 Emission = Vector3.One * 1.2f
             };
 
+            Material procedural9 = new()
+            {
+                Emission = Vector3.One * 0.6f,
+                ProceduralTexture = (uv) =>
+                {
+                    uv *= 6.5f;
+                    Vector2 frag = new Vector2(uv.X + 3.5f, uv.Y + 3.5f);
+                    Vector2 iChannel0_rg = new Vector2(0.5f, 0.5f);
+                    return StarfieldShader.Sample(frag, new Vector2(1000, 800), iChannel0_rg);
+                }
+            };
+
+            var texture = new Bitmap("Texture/bricks.jpg");
+            var brickTexture = new Material() { Texture = texture, Diffuse = Vector3.One };
 
             Spheres.AddRange(
             [
                 new Sphere(20f, new Vector3(0, 0f, 0f), hdrMaterial),
+                new Sphere(0.2f, new Vector3(0f, 0.6f, 1.5f), brickTexture),
                 //new Sphere(10, new Vector3(4, 18, 9), ceiling)
             ]);
 

@@ -1,7 +1,6 @@
 ﻿using RayTracing.Objects;
 using RayTracing.Scenes;
 using System.Numerics;
-using RayTracing.Texture;
 using System.Collections.Concurrent;
 
 namespace RayTracing.Core

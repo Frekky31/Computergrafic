@@ -1,6 +1,5 @@
 ﻿using RayTracing.Core;
 using RayTracing.Scenes;
-using RayTracing.Texture;
 using System.Drawing;
 using System.Numerics;
 

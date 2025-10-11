@@ -1,6 +1,5 @@
 ﻿using RayTracing.Core;
 using RayTracing.Objects;
-using RayTracing.Texture;
 using System;
 using System.Collections.Generic;
 using System.Linq;
