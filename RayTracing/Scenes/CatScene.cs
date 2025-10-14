@@ -50,7 +50,7 @@ namespace RayTracing.Objects
                 Emission = new(0.97f, 0.002f, 0.298f),
                 SpecularDistance = 0.01f
             };
-            Mesh cat = ObjImporter.LoadObj("Meshes/cat.obj", catMat, false);
+            Mesh cat = MeshLoader.LoadMesh("Meshes/cat.obj", catMat, false);
             cat.Scale(0.005f);
             cat.Move(new Vector3(0f, 1f, 0f));
 

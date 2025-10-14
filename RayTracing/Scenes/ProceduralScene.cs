@@ -176,7 +176,7 @@ namespace RayTracing.Objects
                 Diffuse = new(0.97f, 0.002f, 0.298f),
                 SpecularDistance = 0.01f
             };
-            Mesh cat = ObjImporter.LoadObj("Meshes/cat.obj", catMat, false);
+            Mesh cat = MeshLoader.LoadMesh("Meshes/cat.obj", catMat, false);
             cat.Scale(0.003f);
             cat.Move(new Vector3(-1f, 0.6f, -5f));
             cat.Rotate(Quaternion.CreateFromAxisAngle(new Vector3(0, 1, 0), MathF.PI / 6));

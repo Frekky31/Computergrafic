@@ -6,6 +6,13 @@ using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
 
+/*
+ * 
+ * Partially generated through GitHub Copilot
+ * 
+ */
+
+
 namespace RayTracing.Core
 {
     public static class BVHTree

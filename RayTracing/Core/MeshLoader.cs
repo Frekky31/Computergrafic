@@ -8,11 +8,18 @@ using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
 
+/*
+ * 
+ * Generated through GitHub Copilot
+ * 
+ */
+
+
 namespace RayTracing.Core
 {
-    public static class ObjImporter
+    public static class MeshLoader
     {
-        public static Mesh LoadObj(string path, Material material, bool forceFlipWinding = false)
+        public static Mesh LoadMesh(string path, Material material, bool forceFlipWinding = false)
         {
             var positionsRaw = new List<Vector3>();   // OBJ "v"
             var normalsRaw = new List<Vector3>();   // OBJ "vn"

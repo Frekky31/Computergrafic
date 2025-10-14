@@ -234,6 +234,8 @@ namespace RayTracing.Core
             if (t <= 0f) { return false; }
             return true;
         }
+
+        // Möller–Trumbore intersection algorithm from Sebastian Lague's Raytracing video https://www.youtube.com/watch?v=Qz0KTGYJtUk
         private static bool TriangleRay(Vector3 o, Vector3 d, Triangle triangle, out float t)
         {
             Vector3 edgeAB = triangle.B - triangle.A;
