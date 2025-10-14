@@ -1,5 +1,6 @@
 ﻿using RayTracing.Texture;
 using System.Numerics;
+using System.Reflection;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
@@ -24,8 +25,8 @@ namespace ColorInterpolation
         private readonly WriteableBitmap bitmap = new(ImageWidth, ImageHeight, 96, 96, PixelFormats.Bgra32, null);
         private readonly Vector3[] pixelColors = new Vector3[ImageWidth * ImageHeight];
 
-        private Vector3 Color1 = new(0f, 1f, 1f);
-        private Vector3 Color2 = new(0f, 1f, 0f);
+        private Vector3 Color2 = new(0f, 0f, 0f);
+        private Vector3 Color1 = new(1f, 1f, 1f);
 
         public MainWindow()
         {
@@ -94,9 +95,9 @@ namespace ColorInterpolation
 
                 int baseIndex = i * 4;
                 pixels[baseIndex + 0] = b;
-                pixels[baseIndex + 1] = g; 
-                pixels[baseIndex + 2] = r; 
-                pixels[baseIndex + 3] = a; 
+                pixels[baseIndex + 1] = g;
+                pixels[baseIndex + 2] = r;
+                pixels[baseIndex + 3] = a;
             }
 
             Int32Rect rect = new(0, 0, ImageWidth, ImageHeight);

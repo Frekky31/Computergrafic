@@ -7,7 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Media;
 
-namespace RayTracing.Texture
+namespace RayTracing.Core
 {
     public class Material
     {
