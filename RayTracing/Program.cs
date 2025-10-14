@@ -13,11 +13,8 @@ namespace RayTracing
 {
     public class Program
     {
-        [DllImport("kernel32.dll")]
-        private static extern bool AllocConsole();
         static void Main(string[] args)
         {
-            AllocConsole();
             RenderTarget renderTarget = new(600, 600);
 
             RayTracer rayTracer = new()
@@ -31,7 +28,7 @@ namespace RayTracing
                     }
             };
 
-            Engine.Run(renderTarget, new ProceduralScene(), rayTracer);
+            Engine.Run(renderTarget, new TextureScene(), rayTracer);
         }
     }
 }

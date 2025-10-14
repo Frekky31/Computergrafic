@@ -1,4 +1,5 @@
-﻿using System.Numerics;
+﻿using RayTracing.Texture;
+using System.Numerics;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
@@ -7,9 +8,9 @@ using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using System.Windows.Media.Media3D;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
-using RayTracing.Texture;
 
 namespace ColorInterpolation
 {
@@ -18,8 +19,8 @@ namespace ColorInterpolation
     /// </summary>
     public partial class MainWindow : Window
     {
-        private const int ImageWidth = 300;
-        private const int ImageHeight = 300;
+        private const int ImageWidth = 800;
+        private const int ImageHeight = 800;
         private readonly WriteableBitmap bitmap = new(ImageWidth, ImageHeight, 96, 96, PixelFormats.Bgra32, null);
         private readonly Vector3[] pixelColors = new Vector3[ImageWidth * ImageHeight];
 
@@ -60,21 +61,16 @@ namespace ColorInterpolation
         {
 
             // x and y are expected to be in the range [0, 1]
+            uv.X *= (float)ImageWidth / ImageHeight;
+            uv *= 10.0f;
 
-            var f = MathF.Sin(uv.X * 30) + MathF.Sin(uv.Y * 30);
+            float v = CellularNoise2D.Cellular(uv);
+
             return new Vector3(
-                f * 0.5f + 0.5f,
-                MathF.Sin(f * 3 + 2) * 0.5f + 0.5f,
-                MathF.Sin(f * 3 + 10) * 0.5f + 0.5f
+                MathF.Sin(3.0f * v + 2.0f),
+                MathF.Sin(3.0f * v + 0.0f),
+                MathF.Sin(3.0f * v + 4.0f)
             );
-            return WoodTexture.Sample(uv, 0.01f);
-            // Map x and y from [0, ImageWidth-1] and [0, ImageHeight-1] to [0, 1]
-            float scale = 0.07f;
-
-            // Smoother: average several nearby samples
-            float v = CellularNoise2D.Cellular(uv * scale);
-
-            return new Vector3(v);
         }
 
         public Vector3 GetColorSin(float x, float y)

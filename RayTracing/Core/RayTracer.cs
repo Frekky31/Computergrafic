@@ -132,6 +132,7 @@ namespace RayTracing.Core
             return emission + first * second * Vector3.Multiply(brdf, recursion);
         }
 
+        // Flat shading version
         private Vector3 ComputeColor(Scene scene, Vector3 o, Vector3 d, int depth)
         {
             if (FindClosestHitPoint(scene, o, d, out HitPoint? optionalHit) && optionalHit.HasValue)

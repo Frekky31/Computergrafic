@@ -100,12 +100,12 @@ namespace RayTracing.Objects
             {
                 ProceduralTexture = (uv) =>
                 {
-                    uv *= 10.0f;
+                    uv *= 20.0f;
 
                     float v = CellularNoise2D.Cellular(uv);
                     return new Vector3(
-                        MathF.Sin(3.0f * v + 0.0f),
                         MathF.Sin(3.0f * v + 2.0f),
+                        MathF.Sin(3.0f * v + 0.0f),
                         MathF.Sin(3.0f * v + 4.0f)
                     ) * 0.5f + new Vector3(0.5f);
                 }
@@ -170,7 +170,7 @@ namespace RayTracing.Objects
 
             Rectangle floor = new(new(-10, 0, -10), new(20f, 0f, 0f), new(0, 0, 20), new() { Diffuse = new(0.5f, 0.5f, 0.5f) });
             Triangles.AddRange(floor.Triangles);
-            Triangles.AddRange(cat.Triangles);
+            //Triangles.AddRange(cat.Triangles);
 
 
 

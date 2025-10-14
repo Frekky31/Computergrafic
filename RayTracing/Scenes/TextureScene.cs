@@ -96,17 +96,25 @@ namespace RayTracing.Objects
                 ProceduralTexture = (uv) =>
                 {
                     return BoxShader.Sample(uv, new(600,600), 15);
-                    return WoodTexture.Sample(uv, 0.1f);
                 }
             };
 
-            var (hdrData, hdrWidth, hdrHeight) = HDRLoader.LoadEXR("Texture/clarens_night_02_4k.hdr");
-            var hdrMaterial = new Material
+            var (nightHdr, nightWidth, nightHeight) = HDRLoader.LoadEXR("Texture/clarens_night_02_4k.hdr");
+            var nightHdrMat = new Material
             {
-                HDRTexture = hdrData,
+                HDRTexture = nightHdr,
+                HDRWidth = nightWidth,
+                HDRHeight = nightHeight,
+                Emission = Vector3.One
+            };
+
+            var (springHdr, hdrWidth, hdrHeight) = HDRLoader.LoadEXR("Texture/horn-koppe_spring_4k.hdr");
+            var springHdrMat = new Material
+            {
+                HDRTexture = springHdr,
                 HDRWidth = hdrWidth,
                 HDRHeight = hdrHeight,
-                Emission = Vector3.One
+                Emission = Vector3.One * 1.2f
             };
 
 
@@ -124,7 +132,7 @@ namespace RayTracing.Objects
 
                 new Sphere(0.6f, new Vector3(0f, 0.6f, 2f), procedural4),
 
-                new Sphere(20f, new Vector3(0, 0f, 0f), hdrMaterial),
+                new Sphere(20f, new Vector3(0, 0f, 0f), springHdrMat),
                 //new Sphere(10, new Vector3(4, 18, 9), ceiling)
             ]);
 
@@ -134,10 +142,10 @@ namespace RayTracing.Objects
                 Diffuse = new(0.95f, 0.48f, 0.78f),
                 SpecularDistance = 0.01f
             };
-            Mesh cat = ObjImporter.LoadObj("Meshes/cat.obj", catMat, false);
-            cat.Move(new Vector3(-1700f, 155f, -1700f));
-            cat.Rotate(Quaternion.CreateFromAxisAngle(new Vector3(0, 1, 0), MathF.PI / 6));
-            cat.Scale(0.003f);
+            //Mesh cat = ObjImporter.LoadObj("Meshes/cat.obj", catMat, false);
+            //cat.Move(new Vector3(-1700f, 155f, -1700f));
+            //cat.Rotate(Quaternion.CreateFromAxisAngle(new Vector3(0, 1, 0), MathF.PI / 6));
+            //cat.Scale(0.003f);
 
             Rectangle floor = new(new(-5, 0, -5), new(8f, 0f, 0f), new(0, 0, 8), new() { Diffuse = new(0.5f, 0.5f, 0.5f) });
             Triangles.AddRange(floor.Triangles);
