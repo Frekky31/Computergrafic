@@ -47,14 +47,13 @@ namespace RayTracing.Core
 
                 for (int y = range.Item1; y < range.Item2; y++)
                 {
-                    var py = 1 - 2 * ((y + 0.5f) / target.Height);
+                    var pixelY = 1 - 2 * ((y + 0.5f) / target.Height);
                     for (int x = 0; x < target.Width; x++)
                     {
                         int index = y * target.Width + x;
-                        Vector3 sampleBuffer = BackgroundColor;
+                        Vector3 sampleBuffer = Vector3.Zero;
 
                         float pixelX = (2 * ((x + 0.5f) / target.Width) - 1) * (target.Width / (float)target.Height);
-                        float pixelY = py;
 
                         float beta = c_scale * pixelY;
                         float omega = c_scale * pixelX;
@@ -67,7 +66,6 @@ namespace RayTracing.Core
                             else
                                 sampleBuffer += ComputeColor(Scene, Scene.Camera.Position, d, 0);
                         }
-
                         localBuffer[x] = sampleBuffer / SamplesPerPixel;
 
                         int current = Interlocked.Increment(ref processedRays);
@@ -110,7 +108,7 @@ namespace RayTracing.Core
         private Vector3 ComputeColorBRDF(Scene scene, Vector3 o, Vector3 d, int depth)
         {
             HitPoint? optionalHit = null;
-            if (UseBVH && !FindClosestHitPointBVH(BVH, o, d, out optionalHit) || !optionalHit.HasValue)
+            if (UseBVH && (!FindClosestHitPointBVH(BVH, o, d, out optionalHit) || !optionalHit.HasValue))
             {
                 return BackgroundColor;
             }
@@ -146,7 +144,7 @@ namespace RayTracing.Core
         private Vector3 ComputeColor(Scene scene, Vector3 o, Vector3 d, int depth)
         {
             HitPoint? optionalHit = null;
-            if (UseBVH && !FindClosestHitPointBVH(BVH, o, d, out optionalHit) || !optionalHit.HasValue)
+            if (UseBVH && (!FindClosestHitPointBVH(BVH, o, d, out optionalHit) || !optionalHit.HasValue))
             {
                 return BackgroundColor;
             }

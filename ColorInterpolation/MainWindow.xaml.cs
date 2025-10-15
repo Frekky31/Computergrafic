@@ -60,8 +60,16 @@ namespace ColorInterpolation
 
         public Vector3 GetColor(Vector2 uv)
         {
+            return GetColorLinear(uv);
+        }
 
-            // x and y are expected to be in the range [0, 1]
+        public Vector3 GetColorLinear(Vector2 uv)
+        {
+            return Vector3.Lerp(Color1, Color2, uv.X);
+        }
+
+        public Vector3 Cellular(Vector2 uv)
+        {
             uv.X *= (float)ImageWidth / ImageHeight;
             uv *= 10.0f;
 

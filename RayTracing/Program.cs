@@ -16,15 +16,15 @@ namespace RayTracing
     {
         static void Main(string[] args)
         {
-            RenderTarget renderTarget = new(600, 600);
+            RenderTarget renderTarget = new(900, 900);
 
             Stopwatch watch = new();
             RayTracer rayTracer = new()
             {
-                SamplesPerPixel = 16,
+                SamplesPerPixel = 1024,
                 MaxDepth = 20,
                 Probability = 0.25f,
-                UseBVH = true,
+                UseBVH = false,
                 UseBRDF = true,
                 ProgressCallback = (current, total) =>
                     {
@@ -35,7 +35,7 @@ namespace RayTracing
             };
             
             watch.Start();
-            Engine.Run(renderTarget, new ProceduralScene(), rayTracer);
+            Engine.Run(renderTarget, new SpheresScene(), rayTracer);
             watch.Stop();
         }
     }

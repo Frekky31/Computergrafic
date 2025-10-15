@@ -11,7 +11,6 @@ namespace RayTracing.Scenes
 {
     internal class SpheresScene : Scene
     {
-        Camera cameraM = new(new(0, 0, -5), new(0, 0, 6), new(0, 1, 0), 36);
 
         public SpheresScene()
         {
@@ -37,19 +36,14 @@ namespace RayTracing.Scenes
                 new Sphere(1000, new Vector3(0, -1001, 0), m_floor),
                 new Sphere(1000, new Vector3(0, 1001, 0), light),
 
-                new Sphere(0.3f, new Vector3(-0.6f, -0.69f, -0.6f), m_cube1),
-                new Sphere(0.6f, new Vector3(0.3f, -0.39f, 0.3f), m_cube2),
+                new Sphere(0.3f, new Vector3(-0.6f, -0.7f, -0.6f), m_cube1),
+                new Sphere(0.6f, new Vector3(0.3f, -0.4f, 0.3f), m_cube2),
             ]);
 
 
-            Camera = cameraM;
-        }
-
-
-
-        public override void Update(RenderTarget target, float delta)
-        {
-
+            Camera camera1 = new(new(0, 0, -5), new(0, 0, 6), new(0, 1, 0), 36);
+            Camera camera2 = new(new(-0.9f, -0.5f, 0.9f), new(0, 0, 0), new(0, 1, 0), 110);
+            Camera = camera1;
         }
     }
 }

@@ -91,13 +91,5 @@ namespace RayTracing.Objects
 
             Camera = camera;
         }
-
-        public float elapsedTime { get; set; } = 0;
-
-        public override void Update(RenderTarget target, float delta)
-        {
-            elapsedTime += delta;
-
-        }
     }
 }
