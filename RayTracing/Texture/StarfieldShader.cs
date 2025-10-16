@@ -88,7 +88,6 @@ namespace RayTracing.Texture
 
         static float Star(Vector2 uv, float flare)
         {
-            float col = 0.0f;
             float d = uv.Length();
             // avoid division by zero
             float m = 0.0f;

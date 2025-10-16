@@ -16,27 +16,46 @@ namespace RayTracing
     {
         static void Main(string[] args)
         {
-            RenderTarget renderTarget = new(900, 900);
-
+            RenderTarget renderTarget = new(800, 800);
             Stopwatch watch = new();
             RayTracer rayTracer = new()
             {
-                SamplesPerPixel = 1024,
+                SamplesPerPixel = 8192,
                 MaxDepth = 20,
-                Probability = 0.25f,
-                UseBVH = false,
+                Probability = 0.2f,
+                UseBVH = true,
                 UseBRDF = true,
                 ProgressCallback = (current, total) =>
-                    {
-                        var elapsedMs = watch.ElapsedMilliseconds;
-                        var sec = Math.DivRem(elapsedMs, 1000, out long ms);
-                        Console.WriteLine($"{DateTime.Now:HH:mm:ss} - Progress: {current} / {total} pixels ({current * 100 / total}% - {sec}.{ms})");
-                    }
+                {
+                    var elapsedMs = watch.ElapsedMilliseconds;
+                    var sec = Math.DivRem(elapsedMs, 1000, out long ms);
+                    Console.WriteLine($"{DateTime.Now:HH:mm:ss} - Progress: {current} / {total} pixels ({current * 100 / total}% - {sec}.{ms})");
+                }
             };
-            
-            watch.Start();
-            Engine.Run(renderTarget, new SpheresScene(), rayTracer);
-            watch.Stop();
+
+            // List of scenes to render
+            var scenes = new List<(Scene scene, string name)>
+            {
+                (new SpheresScene(), "spheres"),
+                (new TextureScene(), "texture"),
+                (new ProceduralScene(), "procedural"),
+                (new CatScene(), "cat"),
+            };
+
+            Engine.Run(renderTarget);
+
+            foreach (var (scene, name) in scenes)
+            {
+                renderTarget.Clear(rayTracer.BackgroundColor);
+                watch.Restart();
+                rayTracer.Render(renderTarget, scene);
+                watch.Stop();
+                Engine.Show(renderTarget);
+                string fileName = $"Pictures/{DateTime.Now:yyyyMMddHHmmss}_{name}.png";
+                renderTarget.SaveToFile(fileName);
+                Console.WriteLine($"Saved: {fileName}");
+            }
+            Engine.EventLoop();
         }
     }
 }
