@@ -15,6 +15,7 @@ namespace RayTracing.Core
         private const float InvPi = 1f / MathF.PI;
         private BVHNode? BVH;
         private static readonly ThreadLocal<Random> threadRng = new(() => new Random(Guid.NewGuid().GetHashCode()));
+        private static float Luminance(Vector3 rgb) => (0.2126f * rgb.X) + 0.7152f * rgb.Y + 0.0722f * rgb.Z;
 
         public bool UseBVH { get; set; } = true;
         public bool UseBRDF { get; set; } = true;
@@ -36,6 +37,8 @@ namespace RayTracing.Core
             c_r = Vector3.Normalize(Vector3.Cross(Scene.Camera.Up, c_f));
             c_u = Vector3.Normalize(Vector3.Cross(c_r, c_f));
             c_scale = (float)MathF.Tan(Scene.Camera.Fov * MathF.PI / 180f / 2);
+
+            target.Clear(BackgroundColor);
 
             int totalRays = target.Width * target.Height;
             int processedRays = 0;
@@ -59,14 +62,20 @@ namespace RayTracing.Core
                         float omega = c_scale * pixelX;
 
                         Vector3 d = Vector3.Normalize(c_f + beta * c_u + omega * c_r);
+                        Vector3 runningMean = new Vector3(1e-3f, 1e-3f, 1e-3f);
                         for (int i = 0; i < SamplesPerPixel; i++)
                         {
+                            Vector3 sample;
                             if (UseBRDF)
-                                sampleBuffer += ComputeColorBRDF(Scene, Scene.Camera.Position, d, 0);
+                                sample = ComputeColorBRDF(Scene, Scene.Camera.Position, d, 0);
                             else
-                                sampleBuffer += ComputeColor(Scene, Scene.Camera.Position, d, 0);
+                                sample = ComputeColor(Scene, Scene.Camera.Position, d, 0);
+
+                            sample = ClampSample(sample, runningMean);
+
+                            runningMean = (runningMean * i + sample) / (i + 1);
                         }
-                        localBuffer[x] = sampleBuffer / SamplesPerPixel;
+                        localBuffer[x] = SafeColor(runningMean);
 
                         int current = Interlocked.Increment(ref processedRays);
                         if (ProgressCallback != null && (current - lastReported > totalRays / 100 || current == totalRays))
@@ -83,6 +92,29 @@ namespace RayTracing.Core
                     }
                 }
             });
+        }
+
+
+        // clamp sample contribution relative to running mean
+        private static Vector3 ClampSample(Vector3 sample, Vector3 runningMean, float clampMultiplier = 10f)
+        {
+            float sampleLum = Luminance(sample);
+            float meanLum = Math.Max(1e-6f, Luminance(runningMean));
+            float maxAllowed = clampMultiplier * meanLum;
+            if (sampleLum > maxAllowed)
+            {
+                float scale = maxAllowed / sampleLum;
+                return sample * scale;
+            }
+            return sample;
+        }
+
+        private static Vector3 SafeColor(Vector3 c)
+        {
+            if (float.IsNaN(c.X) || float.IsInfinity(c.X)) c.X = 0;
+            if (float.IsNaN(c.Y) || float.IsInfinity(c.Y)) c.Y = 0;
+            if (float.IsNaN(c.Z) || float.IsInfinity(c.Z)) c.Z = 0;
+            return Vector3.Clamp(c, Vector3.Zero, new Vector3(1, 1, 1));
         }
 
         public void BuildBVH(Scene scene)

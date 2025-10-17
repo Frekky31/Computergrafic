@@ -9,6 +9,7 @@ using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 
 namespace RayTracing
 {
@@ -16,13 +17,28 @@ namespace RayTracing
     {
         static void Main(string[] args)
         {
-            RenderTarget renderTarget = new(800, 800);
+            RenderTarget renderTarget = new(900, 900);
             Stopwatch watch = new();
-            RayTracer rayTracer = new()
+            RayTracer rayTracerStrong = new()
             {
                 SamplesPerPixel = 8192,
                 MaxDepth = 20,
-                Probability = 0.2f,
+                Probability = 0.16f,
+                UseBVH = true,
+                UseBRDF = true,
+                ProgressCallback = (current, total) =>
+                {
+                    var elapsedMs = watch.ElapsedMilliseconds;
+                    var sec = Math.DivRem(elapsedMs, 1000, out long ms);
+                    Console.WriteLine($"{DateTime.Now:HH:mm:ss} - Progress: {current} / {total} pixels ({current * 100 / total}% - {sec}.{ms})");
+                }
+            };
+
+            RayTracer rayTracerWeak = new()
+            {
+                SamplesPerPixel = 1024,
+                MaxDepth = 20,
+                Probability = 0.18f,
                 UseBVH = true,
                 UseBRDF = true,
                 ProgressCallback = (current, total) =>
@@ -39,22 +55,28 @@ namespace RayTracing
                 (new SpheresScene(), "spheres"),
                 (new TextureScene(), "texture"),
                 (new ProceduralScene(), "procedural"),
-                (new CatScene(), "cat"),
+                //(new CatScene(), "cat"),
             };
 
             Engine.Run(renderTarget);
 
             foreach (var (scene, name) in scenes)
             {
-                renderTarget.Clear(rayTracer.BackgroundColor);
                 watch.Restart();
-                rayTracer.Render(renderTarget, scene);
+                rayTracerStrong.Render(renderTarget, scene);
                 watch.Stop();
                 Engine.Show(renderTarget);
-                string fileName = $"Pictures/{DateTime.Now:yyyyMMddHHmmss}_{name}.png";
-                renderTarget.SaveToFile(fileName);
-                Console.WriteLine($"Saved: {fileName}");
+                renderTarget.SaveToFile($"Pictures/{DateTime.Now:yyyyMMddHHmmss}_{name}.png");
+                Console.WriteLine($"Saved: {$"Pictures/{DateTime.Now:yyyyMMddHHmmss}_{name}.png"}");
             }
+
+            watch.Restart();
+            rayTracerWeak.Render(renderTarget, new CatScene());
+            watch.Stop();
+            Engine.Show(renderTarget);
+            renderTarget.SaveToFile($"Pictures/{DateTime.Now:yyyyMMddHHmmss}_cat.png");
+            Console.WriteLine($"Saved: {$"Pictures/{DateTime.Now:yyyyMMddHHmmss}_cat.png"}");
+
             Engine.EventLoop();
         }
     }
