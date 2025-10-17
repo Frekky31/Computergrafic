@@ -33,7 +33,7 @@ public class Mesh
     public readonly List<Vertex> Vertices = [];
     public readonly List<(int A, int B, int C)> Tris = [];
 
-    private Mesh() { }
+    public Mesh() { }
 
     public static Mesh CreateCube(Vector3 _colorFront, Vector3 _colorBack, Vector3 _colorTop, Vector3 _colorBottom, Vector3 _colorRight, Vector3 _colorLeft)
     {
