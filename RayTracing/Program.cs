@@ -17,14 +17,14 @@ namespace RayTracing
     {
         static void Main(string[] args)
         {
-            RenderTarget renderTarget = new(900, 900);
+            RenderTarget renderTarget = new(500, 500);
             Stopwatch watch = new();
             RayTracer rayTracerStrong = new()
             {
-                SamplesPerPixel = 8192,
+                SamplesPerPixel = 512,
                 MaxDepth = 20,
-                Probability = 0.16f,
-                UseBVH = true,
+                Probability = 0.2f,
+                UseBVH = false,
                 UseBRDF = true,
                 ProgressCallback = (current, total) =>
                 {
@@ -52,8 +52,8 @@ namespace RayTracing
             // List of scenes to render
             var scenes = new List<(Scene scene, string name)>
             {
-                (new SpheresScene(), "spheres"),
-                (new TextureScene(), "texture"),
+                //(new SpheresScene(), "spheres"),
+                //(new TextureScene(), "texture"),
                 (new ProceduralScene(), "procedural"),
                 //(new CatScene(), "cat"),
             };
@@ -70,12 +70,12 @@ namespace RayTracing
                 Console.WriteLine($"Saved: {$"Pictures/{DateTime.Now:yyyyMMddHHmmss}_{name}.png"}");
             }
 
-            watch.Restart();
-            rayTracerWeak.Render(renderTarget, new CatScene());
-            watch.Stop();
-            Engine.Show(renderTarget);
-            renderTarget.SaveToFile($"Pictures/{DateTime.Now:yyyyMMddHHmmss}_cat.png");
-            Console.WriteLine($"Saved: {$"Pictures/{DateTime.Now:yyyyMMddHHmmss}_cat.png"}");
+            //watch.Restart();
+            //rayTracerWeak.Render(renderTarget, new CatScene());
+            //watch.Stop();
+            //Engine.Show(renderTarget);
+            //renderTarget.SaveToFile($"Pictures/{DateTime.Now:yyyyMMddHHmmss}_cat.png");
+            //Console.WriteLine($"Saved: {$"Pictures/{DateTime.Now:yyyyMMddHHmmss}_cat.png"}");
 
             Engine.EventLoop();
         }

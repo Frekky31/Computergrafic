@@ -19,7 +19,7 @@ namespace RayTracing.Core
 
         public bool UseBVH { get; set; } = true;
         public bool UseBRDF { get; set; } = true;
-        public Vector3 BackgroundColor { get; set; } = new(0.1f, 0.1f, 0.1f);
+        public Vector3 BackgroundColor { get; set; } = new(0.2f, 0.2f, 0.2f);
         public int MaxDepth { get; set; } = 5;
         public int SamplesPerPixel { get; set; } = 1;
         public float Probability { get; set; } = 0.8f;

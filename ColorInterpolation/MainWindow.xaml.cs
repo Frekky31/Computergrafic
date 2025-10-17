@@ -60,7 +60,15 @@ namespace ColorInterpolation
 
         public Vector3 GetColor(Vector2 uv)
         {
-            return GetColorLinear(uv);
+            Vector2 p = (uv - new Vector2(0.5f, 0.5f)) * 1f;
+            float r = MathF.Sqrt(p.X * p.X + p.Y * p.Y), a = MathF.Atan2(p.Y, p.X);
+            float arms = 11f;
+            float t = MathF.Sin(a * arms + r * 8f + MathF.Sin(r * 40f) * 0.25f);
+            Vector3 col = new Vector3(0.5f + 0.5f * MathF.Sin(t), 0.5f + 0.5f * MathF.Sin(t + 2f), 0.5f + 0.5f * MathF.Sin(t + 4f));
+            float petals = MathF.Pow(1f - MathF.Abs(MathF.Sin(a * arms * 0.5f + r * 3f)), 1.5f);
+            col *= Math.Clamp(petals * (1f - r * 1.1f), 0f, 1f);
+            col = new Vector3(MathF.Pow(col.X, 0.9f), MathF.Pow(col.Y, 0.9f), MathF.Pow(col.Z, 0.9f));
+            return col;
         }
 
         public Vector3 GetColorLinear(Vector2 uv)
