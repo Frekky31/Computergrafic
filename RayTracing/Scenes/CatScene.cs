@@ -38,8 +38,8 @@ namespace RayTracing.Objects
 
             Spheres.AddRange(
             [
-                new Sphere(20f, new Vector3(0, 0f, 0f), hdrMaterial),
-                new Sphere(0.2f, new Vector3(0f, 0.6f, 1.5f), brickTexture),
+                new Sphere(20f, new Vector3(0, 0f, 0f), procedural9),
+                //new Sphere(0.2f, new Vector3(0f, 0.6f, 1.5f), brickTexture),
                 //new Sphere(10, new Vector3(4, 18, 9), ceiling)
             ]);
 
@@ -54,7 +54,7 @@ namespace RayTracing.Objects
             cat.Scale(0.005f);
             cat.Move(new Vector3(0f, 1f, 0f));
 
-            Rectangle floor = new(new(-10, 0, -10), new(20f, 0f, 0f), new(0, 0, 20), new() { Diffuse = new(0.5f, 0.5f, 0.5f) });
+            Rectangle floor = new(new(-10, 0, -10), new(20f, 0f, 0f), new(0, 0, 20), new() { Diffuse = new(0.5f, 0.5f, 0.5f), Specular = new(1), SpecularDistance = 0.01f });
             Triangles.AddRange(floor.Triangles);
             Triangles.AddRange(cat.Triangles);
 
