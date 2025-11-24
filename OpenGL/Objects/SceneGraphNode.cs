@@ -10,24 +10,28 @@ namespace OpenGL.Objects
     {
         public Vertex[] Vertices { get; private set; } = [];
         public (int A, int B, int C)[] Tris { get; private set; } = [];
+        public string Name { get; set; } = string.Empty;
 
         public List<(SceneGraphNode Node, Matrix4x4 Transformation)> Children { get; } = [];
 
         int vaoTriangle = 0;
         int vboTriangleIndices = 0;
 
-        public SceneGraphNode() { }
-
-        public SceneGraphNode(IEnumerable<Vertex> verts, IEnumerable<(int A, int B, int C)> tris)
+        public SceneGraphNode(string name)
         {
-            Vertices = verts is Vertex[] arrV ? arrV : new List<Vertex>(verts).ToArray();
-            Tris = tris is (int, int, int)[] arrT ? arrT : new List<(int, int, int)>(tris).ToArray();
+            Name = name;
+        }
+
+        public SceneGraphNode(IEnumerable<Vertex> verts, IEnumerable<(int A, int B, int C)> tris, string name)
+        {
+            Vertices = verts is Vertex[] arrV ? arrV : [.. verts];
+            Tris = tris is (int, int, int)[] arrT ? arrT : [.. tris];
+            Name = name;
         }
 
         public void AddChild(SceneGraphNode child, Matrix4x4 localTransform)
             => Children.Add((child, localTransform));
 
-        // Edit child local transform
         public void SetChildTransform(SceneGraphNode child, Matrix4x4 localTransform)
         {
             for (int i = 0; i < Children.Count; i++)
@@ -40,39 +44,73 @@ namespace OpenGL.Objects
             }
         }
 
+        public void SetChildTransform(string name, Matrix4x4 localTransform)
+        {
+            for (int i = 0; i < Children.Count; i++)
+            {
+                if (Children[i].Node.Name == name)
+                {
+                    Children[i] = (Children[i].Node, localTransform);
+                    return;
+                }
+            }
+        }
+
         public void Load(int hProgram)
+        {
+            LoadNode(hProgram);
+            foreach (var (Node, _) in Children)
+            {
+                Node.Load(hProgram);
+            }
+        }
+
+        public void LoadNode(int hProgram)
         {
             if (Vertices == null || Vertices.Length == 0 || Tris == null || Tris.Length == 0)
                 return;
 
-            List<float> posList = [];
-            List<float> texCoordList = [];
-            List<float> colorList = [];
-            List<float> normalList = [];
+            int vertCount = Vertices.Length;
+            int posCount = vertCount * 3;
+            int colorCount = vertCount * 3;
+            int normalCount = vertCount * 3;
+            int texCount = vertCount * 2;
 
-            foreach (var v in Vertices)
+            var posArray = new float[posCount];
+            var colorArray = new float[colorCount];
+            var normalArray = new float[normalCount];
+            var texArray = new float[texCount];
+
+            for (int i = 0, pi = 0, ci = 0, ni = 0, ti = 0; i < vertCount; i++)
             {
-                posList.Add(v.Position.X);
-                posList.Add(v.Position.Y);
-                posList.Add(v.Position.Z);
-                colorList.Add(v.Color.X);
-                colorList.Add(v.Color.Y);
-                colorList.Add(v.Color.Z);
-                normalList.Add(v.Normal.X);
-                normalList.Add(v.Normal.Y);
-                normalList.Add(v.Normal.Z);
-                texCoordList.Add(v.TexCoord.X);
-                texCoordList.Add(v.TexCoord.Y);
+                var v = Vertices[i];
+                posArray[pi++] = v.Position.X;
+                posArray[pi++] = v.Position.Y;
+                posArray[pi++] = v.Position.Z;
+                colorArray[ci++] = v.Color.X;
+                colorArray[ci++] = v.Color.Y;
+                colorArray[ci++] = v.Color.Z;
+                normalArray[ni++] = v.Normal.X;
+                normalArray[ni++] = v.Normal.Y;
+                normalArray[ni++] = v.Normal.Z;
+                texArray[ti++] = v.TexCoord.X;
+                texArray[ti++] = v.TexCoord.Y;
             }
 
-            var indices = Tris.SelectMany(t => new[] { t.A, t.C, t.B }).ToArray();
-            int indexCount = indices.Length;
+            var indices = new int[Tris.Length * 3];
+            for (int i = 0, idx = 0; i < Tris.Length; i++)
+            {
+                var t = Tris[i];
+                indices[idx++] = t.A;
+                indices[idx++] = t.C;
+                indices[idx++] = t.B;
+            }
 
             GL.UseProgram(hProgram);
 
             var vboTriangleVertices = GL.GenBuffer();
             GL.BindBuffer(BufferTarget.ArrayBuffer, vboTriangleVertices);
-            GL.BufferData(BufferTarget.ArrayBuffer, posList.Count * sizeof(float), posList.ToArray(), BufferUsageHint.StaticDraw);
+            GL.BufferData(BufferTarget.ArrayBuffer, posArray.Length * sizeof(float), posArray, BufferUsageHint.StaticDraw);
 
             // upload model indices to a vbo
             vboTriangleIndices = GL.GenBuffer();
@@ -82,19 +120,20 @@ namespace OpenGL.Objects
             // upload model colors to a vbo
             var vboColors = GL.GenBuffer();
             GL.BindBuffer(BufferTarget.ArrayBuffer, vboColors);
-            GL.BufferData(BufferTarget.ArrayBuffer, colorList.Count * sizeof(float), colorList.ToArray(), BufferUsageHint.StaticDraw);
+            GL.BufferData(BufferTarget.ArrayBuffer, colorArray.Length * sizeof(float), colorArray, BufferUsageHint.StaticDraw);
 
             var vboTexCoords = GL.GenBuffer();
             GL.BindBuffer(BufferTarget.ArrayBuffer, vboTexCoords);
-            GL.BufferData(BufferTarget.ArrayBuffer, texCoordList.Count * sizeof(float), texCoordList.ToArray(), BufferUsageHint.StaticDraw);
+            GL.BufferData(BufferTarget.ArrayBuffer, texArray.Length * sizeof(float), texArray, BufferUsageHint.StaticDraw);
 
             var vboNormals = GL.GenBuffer();
             GL.BindBuffer(BufferTarget.ArrayBuffer, vboNormals);
-            GL.BufferData(BufferTarget.ArrayBuffer, normalList.Count * sizeof(float), normalList.ToArray(), BufferUsageHint.StaticDraw);
+            GL.BufferData(BufferTarget.ArrayBuffer, normalArray.Length * sizeof(float), normalArray, BufferUsageHint.StaticDraw);
 
             //set up a vao
             vaoTriangle = GL.GenVertexArray();
             GL.BindVertexArray(vaoTriangle);
+            GL.BindBuffer(BufferTarget.ElementArrayBuffer, vboTriangleIndices);
             var posAttribIndex = GL.GetAttribLocation(hProgram, "inPos");
             if (posAttribIndex != -1)
             {
@@ -112,7 +151,8 @@ namespace OpenGL.Objects
             }
 
             var normalAttribIndex = GL.GetAttribLocation(hProgram, "inNormal");
-            if (normalAttribIndex != -1) {
+            if (normalAttribIndex != -1)
+            {
                 GL.EnableVertexAttribArray(normalAttribIndex);
                 GL.BindBuffer(BufferTarget.ArrayBuffer, vboNormals);
                 GL.VertexAttribPointer(normalAttribIndex, 3, VertexAttribPointerType.Float, false, 0, 0);
@@ -125,21 +165,22 @@ namespace OpenGL.Objects
                 GL.BindBuffer(BufferTarget.ArrayBuffer, vboTexCoords);
                 GL.VertexAttribPointer(texCoordAttribIndex, 2, VertexAttribPointerType.Float, false, 0, 0);
             }
-
         }
 
         public void Render(Matrix4x4 modelMatrix, Matrix4x4 viewProjectionMatrix, int shaderProgram, float time)
         {
-            Matrix4x4 normalM;
-            if (Matrix4x4.Invert(modelMatrix, out var inv))
-                normalM = Matrix4x4.Transpose(inv);
-            else
-                normalM = Matrix4x4.Transpose(modelMatrix);
+            if (Vertices != null && Vertices.Length != 0 && Tris != null && Tris.Length != 0)
+            {
+                Matrix4x4 normalM;
+                if (Matrix4x4.Invert(modelMatrix, out var inv))
+                    normalM = Matrix4x4.Transpose(inv);
+                else
+                    normalM = Matrix4x4.Transpose(modelMatrix);
 
-            var mvp = modelMatrix * viewProjectionMatrix;
+                var mvp = modelMatrix * viewProjectionMatrix;
 
-            RenderTriangles(modelMatrix, viewProjectionMatrix, normalM, mvp, shaderProgram, time);
-
+                RenderTriangles(modelMatrix, viewProjectionMatrix, normalM, mvp, shaderProgram, time);
+            }
             foreach (var (Node, Transformation) in Children)
             {
                 Node.Render(Transformation * modelMatrix, viewProjectionMatrix, shaderProgram, time);

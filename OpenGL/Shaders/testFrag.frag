@@ -1,8 +1,11 @@
 ﻿#version 410 core
 
 in vec3 color;
+in vec2 texCoord;
+in vec3 normal;
+in vec3 pos;
 out vec4 outColor;
-
+uniform sampler2D brickTexture;
 uniform float inTime;
 
 // Equivalent to the helper in the original shader
@@ -59,4 +62,5 @@ void main()
     extrusion *= vignette;
 
     outColor = vec4(col * color, extrusion);
+    outColor *= texture(brickTexture, texCoord);
 }

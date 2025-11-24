@@ -1,17 +1,19 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Drawing;
-using System.Linq;
-using System.Numerics;
-using System.Runtime.InteropServices;
-using System.Threading.Tasks;
-using OpenGL.Objects;
+﻿using OpenGL.Objects;
+using OpenGL.Scenes;
 using OpenTK;
 using OpenTK.Graphics.OpenGL4;
 using OpenTK.Windowing.Common;
 using OpenTK.Windowing.Desktop;
 using OpenTK.Windowing.GraphicsLibraryFramework;
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Drawing;
+using System.Drawing.Drawing2D;
+using System.Linq;
+using System.Numerics;
+using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 
 namespace OpenGL
 {
@@ -34,14 +36,7 @@ namespace OpenGL
             int hProgram = 0;
             int tiuIndex = 1;
 
-            var cube1 = Mesh.CreateCube(new(1, 0, 0), new(0, 1, 0), new(0, 0, 1), new(1, 1, 0), new(1, 0, 1), new(0, 1, 1));
-            var cube2 = Mesh.CreateCube(new(1, 0, 0), new(0, 1, 0), new(0, 0, 1), new(1, 1, 0), new(1, 0, 1), new(0, 1, 1));
-
-            SceneGraphNode root = new();
-            SceneGraphNode cube1Node = new(cube1.Vertices, cube1.Tris);
-            SceneGraphNode cube2Node = new(cube2.Vertices, cube2.Tris);
-            root.AddChild(cube1Node, Matrix4x4.Identity);
-            root.AddChild(cube2Node, Matrix4x4.Identity);
+            MainScene scene = new MainScene();
 
             w.Load += () =>
             {
@@ -65,8 +60,10 @@ namespace OpenGL
                 GL.Enable(EnableCap.FramebufferSrgb);
                 GL.ClearColor(0.5f, 0.5f, 0.5f, 0);
                 GL.ClearDepth(1);
-                //GL.Disable(EnableCap.DepthTest);
-                //GL.DepthFunc(DepthFunction.Less);
+                // Ensure depth testing and depth writes are enabled so Z-buffering works
+                GL.Enable(EnableCap.DepthTest);
+                GL.DepthMask(true);
+                GL.DepthFunc(DepthFunction.Less);
                 //GL.Disable(EnableCap.CullFace);
                 GL.Enable(EnableCap.CullFace);
 
@@ -82,14 +79,14 @@ namespace OpenGL
                 if (status != (int)All.True)
                     throw new Exception(GL.GetProgramInfoLog(hProgram));
 
-                cube1Node.Load(hProgram);
 
                 GL.ActiveTexture(TextureUnit.Texture0 + tiuIndex);
                 var path = Path.GetFullPath("Textures/bricks.jpg");
                 var hTexture = LoadTexture(path);
                 GL.BindTexture(TextureTarget.Texture2D, hTexture);
+                
+                scene.LoadScene(hProgram);
 
-                //check for errors during all previous calls
                 var error = GL.GetError();
                 if (error != OpenTK.Graphics.OpenGL4.ErrorCode.NoError)
                     throw new Exception(error.ToString());
@@ -99,8 +96,7 @@ namespace OpenGL
             w.UpdateFrame += fea =>
             {
                 time += fea.Time;
-
-
+                scene.UpdateScene(hProgram, (float)time);
             };
 
             w.RenderFrame += fea =>
@@ -114,16 +110,9 @@ namespace OpenGL
                 //set uniform values
                 GL.Uniform1(GL.GetUniformLocation(hProgram, "inTime"), (float)time);
 
-                var matrix = Matrix4x4.Identity;
-                matrix *= Matrix4x4.CreateRotationY((float)time * 0.5f);
-                matrix *= Matrix4x4.CreateRotationX((float)time * 0.3f);
-                matrix *= Matrix4x4.CreateTranslation(3, 0, -10);
-
-                var v = Matrix4x4.CreatePerspectiveFieldOfView(MathF.PI / 4, (float)w.Size.X / w.Size.Y, 0.1f, 100f);
-
                 GL.Uniform1(GL.GetUniformLocation(hProgram, "brickTexture"), tiuIndex);
 
-                root.Render(matrix, v, hProgram, (float)time);
+                scene.RenderScene(hProgram, (float)time, w);
 
                 w.SwapBuffers();
 
