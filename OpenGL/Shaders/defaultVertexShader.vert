@@ -2,14 +2,16 @@
 
 in vec3 inPos;
 in vec3 inColor;
+in vec2 inTexCoord;
 uniform mat4 inMatrix;
 uniform float inTime;
-out float fromVertexShaderToFragmentShader;
+uniform sampler2D brickTexture;
 out vec3 color;
+out vec2 texCoord;
 
 void main()
 {
-	gl_Position = vec4(inPos, 1.0) + vec4(sin(inTime) * 0.5, cos(inTime) * 0.5, 0.0, 0.0);
-	fromVertexShaderToFragmentShader = inPos.x + 0.5;
+	gl_Position = inMatrix * vec4(inPos, 1.0);
 	color = inColor;
+	texCoord = inTexCoord;
 }

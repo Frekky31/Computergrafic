@@ -1,5 +1,6 @@
 ﻿#version 410 core
 
+in vec3 color;
 out vec4 outColor;
 
 uniform float inTime;
@@ -13,7 +14,7 @@ float cosRange(float amt, float range, float minimum)
 void main()
 {
     vec2  uResolution = vec2(720, 480);
-    const int zoom = 40;
+    const int zoom = 60;
     const float brightness = 0.975;
 
     float time = (inTime-300) * 1.25;
@@ -22,7 +23,7 @@ void main()
     vec2 p = (2.0 * fragCoord - uResolution) / max(uResolution.x, uResolution.y);
 
     float ct     = cosRange(time * 5.0, 3.0, 1.1);
-    float xBoost = cosRange(time * 0.2, 5.0, 5.0);
+    float xBoost = cosRange(time * 0.4, 5.0, 5.0);
     float yBoost = cosRange(time * 0.1, 10.0, 5.0);
     float fScale = cosRange(time * 15.5, 1.25, 0.5);
 
@@ -57,5 +58,5 @@ void main()
     extrusion *= 1.5;
     extrusion *= vignette;
 
-    outColor = vec4(col, extrusion);
+    outColor = vec4(col * color, extrusion);
 }
