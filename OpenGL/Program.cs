@@ -32,45 +32,16 @@ namespace OpenGL
                 });
 
             int hProgram = 0;
-            int vaoTriangle = 0;
-            int vboTriangleIndices = 0;
             int tiuIndex = 1;
 
             var cube1 = Mesh.CreateCube(new(1, 0, 0), new(0, 1, 0), new(0, 0, 1), new(1, 1, 0), new(1, 0, 1), new(0, 1, 1));
             var cube2 = Mesh.CreateCube(new(1, 0, 0), new(0, 1, 0), new(0, 0, 1), new(1, 1, 0), new(1, 0, 1), new(0, 1, 1));
 
-            List<float> vertexList = [];
-            List<float> texCoordList = [];
-            List<float> colorList = [];
-
-            // prepare vertex and color lists with cube1 and cube2 data
-            
-            foreach (var v in cube1.Vertices)
-            {
-                vertexList.Add(v.Position.X);
-                vertexList.Add(v.Position.Y);
-                vertexList.Add(v.Position.Z);
-                colorList.Add(v.Color.X);
-                colorList.Add(v.Color.Y);
-                colorList.Add(v.Color.Z);
-                texCoordList.Add(v.TexCoord.X);
-                texCoordList.Add(v.TexCoord.Y);
-            }
-
-            foreach (var v in cube2.Vertices)
-            {
-                vertexList.Add(v.Position.X);
-                vertexList.Add(v.Position.Y);
-                vertexList.Add(v.Position.Z);
-                colorList.Add(v.Color.X);
-                colorList.Add(v.Color.Y);
-                colorList.Add(v.Color.Z);
-                texCoordList.Add(v.TexCoord.X);
-                texCoordList.Add(v.TexCoord.Y);
-            }
-
-            var indices = cube1.Tris.SelectMany(t => new[] { t.A, t.C, t.B }).ToArray();
-            int indexCount = indices.Length;
+            SceneGraphNode root = new();
+            SceneGraphNode cube1Node = new(cube1.Vertices, cube1.Tris);
+            SceneGraphNode cube2Node = new(cube2.Vertices, cube2.Tris);
+            root.AddChild(cube1Node, Matrix4x4.Identity);
+            root.AddChild(cube2Node, Matrix4x4.Identity);
 
             w.Load += () =>
             {
@@ -89,6 +60,7 @@ namespace OpenGL
                     if (Debugger.IsAttached)
                         GL.Enable(EnableCap.DebugOutputSynchronous);
                 }
+
 
                 GL.Enable(EnableCap.FramebufferSrgb);
                 GL.ClearColor(0.5f, 0.5f, 0.5f, 0);
@@ -110,52 +82,7 @@ namespace OpenGL
                 if (status != (int)All.True)
                     throw new Exception(GL.GetProgramInfoLog(hProgram));
 
-
-                //upload model vertices to a vbo
-                var vboTriangleVertices = GL.GenBuffer();
-                GL.BindBuffer(BufferTarget.ArrayBuffer, vboTriangleVertices);
-                GL.BufferData(BufferTarget.ArrayBuffer, vertexList.Count * sizeof(float), vertexList.ToArray(), BufferUsageHint.StaticDraw);
-
-                // upload model indices to a vbo
-                vboTriangleIndices = GL.GenBuffer();
-                GL.BindBuffer(BufferTarget.ElementArrayBuffer, vboTriangleIndices);
-                GL.BufferData(BufferTarget.ElementArrayBuffer, indices.Length * sizeof(int), indices, BufferUsageHint.StaticDraw);
-
-                // upload model colors to a vbo
-                var vboColors = GL.GenBuffer();
-                GL.BindBuffer(BufferTarget.ArrayBuffer, vboColors);
-                GL.BufferData(BufferTarget.ArrayBuffer, colorList.Count * sizeof(float), colorList.ToArray(), BufferUsageHint.StaticDraw);
-
-                var vboTexCoords = GL.GenBuffer();
-                GL.BindBuffer(BufferTarget.ArrayBuffer, vboTexCoords);
-                GL.BufferData(BufferTarget.ArrayBuffer, texCoordList.Count * sizeof(float), texCoordList.ToArray(), BufferUsageHint.StaticDraw);
-
-                //set up a vao
-                vaoTriangle = GL.GenVertexArray();
-                GL.BindVertexArray(vaoTriangle);
-                var posAttribIndex = GL.GetAttribLocation(hProgram, "inPos");
-                if (posAttribIndex != -1)
-                {
-                    GL.EnableVertexAttribArray(posAttribIndex);
-                    GL.BindBuffer(BufferTarget.ArrayBuffer, vboTriangleVertices);
-                    GL.VertexAttribPointer(posAttribIndex, 3, VertexAttribPointerType.Float, false, 0, 0);
-                }
-
-                var colorAttribIndex = GL.GetAttribLocation(hProgram, "inColor");
-                if (colorAttribIndex != -1)
-                {
-                    GL.EnableVertexAttribArray(colorAttribIndex);
-                    GL.BindBuffer(BufferTarget.ArrayBuffer, vboColors);
-                    GL.VertexAttribPointer(colorAttribIndex, 3, VertexAttribPointerType.Float, false, 0, 0);
-                }
-
-                var texCoordAttribIndex = GL.GetAttribLocation(hProgram, "inTexCoord");
-                if (texCoordAttribIndex != -1)
-                {
-                    GL.EnableVertexAttribArray(texCoordAttribIndex);
-                    GL.BindBuffer(BufferTarget.ArrayBuffer, vboTexCoords);
-                    GL.VertexAttribPointer(texCoordAttribIndex, 2, VertexAttribPointerType.Float, false, 0, 0);
-                }
+                cube1Node.Load(hProgram);
 
                 GL.ActiveTexture(TextureUnit.Texture0 + tiuIndex);
                 var path = Path.GetFullPath("Textures/bricks.jpg");
@@ -171,9 +98,9 @@ namespace OpenGL
             double time = 0;
             w.UpdateFrame += fea =>
             {
-                //process logic
-
                 time += fea.Time;
+
+
             };
 
             w.RenderFrame += fea =>
@@ -191,17 +118,13 @@ namespace OpenGL
                 matrix *= Matrix4x4.CreateRotationY((float)time * 0.5f);
                 matrix *= Matrix4x4.CreateRotationX((float)time * 0.3f);
                 matrix *= Matrix4x4.CreateTranslation(3, 0, -10);
-                matrix *= Matrix4x4.CreatePerspectiveFieldOfView(MathF.PI / 4, (float)w.Size.X / w.Size.Y, 0.1f, 100f);
-                GL.UniformMatrix4(GL.GetUniformLocation(hProgram, "inMatrix"), 1, false, ref matrix.M11);
+
+                var v = Matrix4x4.CreatePerspectiveFieldOfView(MathF.PI / 4, (float)w.Size.X / w.Size.Y, 0.1f, 100f);
 
                 GL.Uniform1(GL.GetUniformLocation(hProgram, "brickTexture"), tiuIndex);
 
-                //render our model
-                GL.BindVertexArray(vaoTriangle);
-                GL.BindBuffer(BufferTarget.ElementArrayBuffer, vboTriangleIndices);
-                GL.DrawElements(PrimitiveType.Triangles, indexCount, DrawElementsType.UnsignedInt, 0);
+                root.Render(matrix, v, hProgram, (float)time);
 
-                //display
                 w.SwapBuffers();
 
                 var error = GL.GetError();

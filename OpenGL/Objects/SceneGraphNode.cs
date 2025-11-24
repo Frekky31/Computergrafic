@@ -1,7 +1,8 @@
-﻿using System;
+﻿using OpenTK.Graphics.OpenGL4;
+using System;
 using System.Collections.Generic;
+using System.Drawing.Drawing2D;
 using System.Numerics;
-using OpenTK.Graphics.OpenGL4;
 
 namespace OpenGL.Objects
 {
@@ -10,97 +11,125 @@ namespace OpenGL.Objects
         public Vertex[] Vertices { get; private set; } = [];
         public (int A, int B, int C)[] Tris { get; private set; } = [];
 
-        public List<(SceneGraphNode Node, Matrix4x4 Transformation)> Children { get; } = new();
+        public List<(SceneGraphNode Node, Matrix4x4 Transformation)> Children { get; } = [];
 
-        private int vao = 0;
-        private int vbo = 0;
-        private int ebo = 0;
-        private bool buffersCreated = false;
+        int vaoTriangle = 0;
+        int vboTriangleIndices = 0;
 
         public SceneGraphNode() { }
 
         public SceneGraphNode(IEnumerable<Vertex> verts, IEnumerable<(int A, int B, int C)> tris)
         {
-            SetGeometry(verts, tris);
-        }
-
-        public void SetGeometry(IEnumerable<Vertex> verts, IEnumerable<(int A, int B, int C)> tris)
-        {
             Vertices = verts is Vertex[] arrV ? arrV : new List<Vertex>(verts).ToArray();
             Tris = tris is (int, int, int)[] arrT ? arrT : new List<(int, int, int)>(tris).ToArray();
-
-            // recreate GL buffers on next Load call
-            DeleteBuffers();
-            buffersCreated = false;
         }
 
         public void AddChild(SceneGraphNode child, Matrix4x4 localTransform)
             => Children.Add((child, localTransform));
 
-        // Public API: create all GL buffers/resources. Should be called from application Load.
-        public void Load()
+        // Edit child local transform
+        public void SetChildTransform(SceneGraphNode child, Matrix4x4 localTransform)
         {
-            if (buffersCreated) return;
+            for (int i = 0; i < Children.Count; i++)
+            {
+                if (Children[i].Node == child)
+                {
+                    Children[i] = (child, localTransform);
+                    return;
+                }
+            }
+        }
 
+        public void Load(int hProgram)
+        {
             if (Vertices == null || Vertices.Length == 0 || Tris == null || Tris.Length == 0)
                 return;
 
-            vao = GL.GenVertexArray();
-            GL.BindVertexArray(vao);
+            List<float> posList = [];
+            List<float> texCoordList = [];
+            List<float> colorList = [];
+            List<float> normalList = [];
 
-            vbo = GL.GenBuffer();
-            GL.BindBuffer(BufferTarget.ArrayBuffer, vbo);
-
-            var vertexData = new float[Vertices.Length * 11];
-            for (int i = 0; i < Vertices.Length; i++)
+            foreach (var v in Vertices)
             {
-                var v = Vertices[i];
-                int baseIdx = i * 11;
-                vertexData[baseIdx + 0] = v.Position.X;
-                vertexData[baseIdx + 1] = v.Position.Y;
-                vertexData[baseIdx + 2] = v.Position.Z;
-
-                vertexData[baseIdx + 3] = v.Color.X;
-                vertexData[baseIdx + 4] = v.Color.Y;
-                vertexData[baseIdx + 5] = v.Color.Z;
-
-                vertexData[baseIdx + 6] = v.TexCoord.X;
-                vertexData[baseIdx + 7] = v.TexCoord.Y;
-
-                vertexData[baseIdx + 8] = v.Normal.X;
-                vertexData[baseIdx + 9] = v.Normal.Y;
-                vertexData[baseIdx + 10] = v.Normal.Z;
+                posList.Add(v.Position.X);
+                posList.Add(v.Position.Y);
+                posList.Add(v.Position.Z);
+                colorList.Add(v.Color.X);
+                colorList.Add(v.Color.Y);
+                colorList.Add(v.Color.Z);
+                normalList.Add(v.Normal.X);
+                normalList.Add(v.Normal.Y);
+                normalList.Add(v.Normal.Z);
+                texCoordList.Add(v.TexCoord.X);
+                texCoordList.Add(v.TexCoord.Y);
             }
 
-            GL.BufferData(BufferTarget.ArrayBuffer, vertexData.Length * sizeof(float), vertexData, BufferUsageHint.StaticDraw);
+            var indices = Tris.SelectMany(t => new[] { t.A, t.C, t.B }).ToArray();
+            int indexCount = indices.Length;
 
-            // create EBO
-            ebo = GL.GenBuffer();
-            GL.BindBuffer(BufferTarget.ElementArrayBuffer, ebo);
+            GL.UseProgram(hProgram);
 
-            var indices = new int[Tris.Length * 3];
-            for (int i = 0; i < Tris.Length; i++)
-            {
-                indices[i * 3 + 0] = Tris[i].A;
-                indices[i * 3 + 1] = Tris[i].B;
-                indices[i * 3 + 2] = Tris[i].C;
-            }
+            var vboTriangleVertices = GL.GenBuffer();
+            GL.BindBuffer(BufferTarget.ArrayBuffer, vboTriangleVertices);
+            GL.BufferData(BufferTarget.ArrayBuffer, posList.Count * sizeof(float), posList.ToArray(), BufferUsageHint.StaticDraw);
 
+            // upload model indices to a vbo
+            vboTriangleIndices = GL.GenBuffer();
+            GL.BindBuffer(BufferTarget.ElementArrayBuffer, vboTriangleIndices);
             GL.BufferData(BufferTarget.ElementArrayBuffer, indices.Length * sizeof(int), indices, BufferUsageHint.StaticDraw);
 
-            // Unbind to leave a clean state
-            GL.BindVertexArray(0);
-            GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
-            GL.BindBuffer(BufferTarget.ElementArrayBuffer, 0);
+            // upload model colors to a vbo
+            var vboColors = GL.GenBuffer();
+            GL.BindBuffer(BufferTarget.ArrayBuffer, vboColors);
+            GL.BufferData(BufferTarget.ArrayBuffer, colorList.Count * sizeof(float), colorList.ToArray(), BufferUsageHint.StaticDraw);
 
-            buffersCreated = true;
+            var vboTexCoords = GL.GenBuffer();
+            GL.BindBuffer(BufferTarget.ArrayBuffer, vboTexCoords);
+            GL.BufferData(BufferTarget.ArrayBuffer, texCoordList.Count * sizeof(float), texCoordList.ToArray(), BufferUsageHint.StaticDraw);
+
+            var vboNormals = GL.GenBuffer();
+            GL.BindBuffer(BufferTarget.ArrayBuffer, vboNormals);
+            GL.BufferData(BufferTarget.ArrayBuffer, normalList.Count * sizeof(float), normalList.ToArray(), BufferUsageHint.StaticDraw);
+
+            //set up a vao
+            vaoTriangle = GL.GenVertexArray();
+            GL.BindVertexArray(vaoTriangle);
+            var posAttribIndex = GL.GetAttribLocation(hProgram, "inPos");
+            if (posAttribIndex != -1)
+            {
+                GL.EnableVertexAttribArray(posAttribIndex);
+                GL.BindBuffer(BufferTarget.ArrayBuffer, vboTriangleVertices);
+                GL.VertexAttribPointer(posAttribIndex, 3, VertexAttribPointerType.Float, false, 0, 0);
+            }
+
+            var colorAttribIndex = GL.GetAttribLocation(hProgram, "inColor");
+            if (colorAttribIndex != -1)
+            {
+                GL.EnableVertexAttribArray(colorAttribIndex);
+                GL.BindBuffer(BufferTarget.ArrayBuffer, vboColors);
+                GL.VertexAttribPointer(colorAttribIndex, 3, VertexAttribPointerType.Float, false, 0, 0);
+            }
+
+            var normalAttribIndex = GL.GetAttribLocation(hProgram, "inNormal");
+            if (normalAttribIndex != -1) {
+                GL.EnableVertexAttribArray(normalAttribIndex);
+                GL.BindBuffer(BufferTarget.ArrayBuffer, vboNormals);
+                GL.VertexAttribPointer(normalAttribIndex, 3, VertexAttribPointerType.Float, false, 0, 0);
+            }
+
+            var texCoordAttribIndex = GL.GetAttribLocation(hProgram, "inTexCoord");
+            if (texCoordAttribIndex != -1)
+            {
+                GL.EnableVertexAttribArray(texCoordAttribIndex);
+                GL.BindBuffer(BufferTarget.ArrayBuffer, vboTexCoords);
+                GL.VertexAttribPointer(texCoordAttribIndex, 2, VertexAttribPointerType.Float, false, 0, 0);
+            }
+
         }
 
         public void Render(Matrix4x4 modelMatrix, Matrix4x4 viewProjectionMatrix, int shaderProgram, float time)
         {
-            if (!buffersCreated)
-                return; // ensure Load() was called; do not create buffers during render
-
             Matrix4x4 normalM;
             if (Matrix4x4.Invert(modelMatrix, out var inv))
                 normalM = Matrix4x4.Transpose(inv);
@@ -117,78 +146,27 @@ namespace OpenGL.Objects
             }
         }
 
-        private void RenderTriangles(Matrix4x4 model, Matrix4x4 viewProj, Matrix4x4 normalM, Matrix4x4 mvp, int shaderProgram, float time)
+        private void RenderTriangles(Matrix4x4 model, Matrix4x4 viewProj, Matrix4x4 normalM, Matrix4x4 mvp, int hProgram, float time)
         {
-            if (!buffersCreated) return;
+            GL.UseProgram(hProgram);
 
-            GL.BindVertexArray(vao);
-            GL.BindBuffer(BufferTarget.ArrayBuffer, vbo);
-            GL.BindBuffer(BufferTarget.ElementArrayBuffer, ebo);
+            GL.BindVertexArray(vaoTriangle);
+            GL.BindBuffer(BufferTarget.ArrayBuffer, vboTriangleIndices);
 
-            const int floatsPerVertex = 11;
-            const int stride = floatsPerVertex * sizeof(float);
-
-            int posLoc = GL.GetAttribLocation(shaderProgram, "inPos");
-            if (posLoc != -1)
-            {
-                GL.EnableVertexAttribArray(posLoc);
-                GL.VertexAttribPointer(posLoc, 3, VertexAttribPointerType.Float, false, stride, 0);
-            }
-
-            int colorLoc = GL.GetAttribLocation(shaderProgram, "inColor");
-            if (colorLoc != -1)
-            {
-                GL.EnableVertexAttribArray(colorLoc);
-                GL.VertexAttribPointer(colorLoc, 3, VertexAttribPointerType.Float, false, stride, 3 * sizeof(float));
-            }
-
-            int texLoc = GL.GetAttribLocation(shaderProgram, "inTex");
-            if (texLoc != -1)
-            {
-                GL.EnableVertexAttribArray(texLoc);
-                GL.VertexAttribPointer(texLoc, 2, VertexAttribPointerType.Float, false, stride, 6 * sizeof(float));
-            }
-
-            int normalLoc = GL.GetAttribLocation(shaderProgram, "inNormal");
-            if (normalLoc != -1)
-            {
-                GL.EnableVertexAttribArray(normalLoc);
-                GL.VertexAttribPointer(normalLoc, 3, VertexAttribPointerType.Float, false, stride, 8 * sizeof(float));
-            }
-
-            int mLoc = GL.GetUniformLocation(shaderProgram, "inMatrix");
-            if (mLoc != -1)
-            {
-                GL.UniformMatrix4(mLoc, 1, false, ref mvp.M11);
-            }
-
-            int normalMLoc = GL.GetUniformLocation(shaderProgram, "normalMatrix");
-            if (normalMLoc != -1)
-            {
-                GL.UniformMatrix4(normalMLoc, 1, false, ref normalM.M11);
-            }
-
-            GL.Uniform1(GL.GetUniformLocation(shaderProgram, "inTime"), (float)time);
+            GL.Uniform1(GL.GetUniformLocation(hProgram, "inTime"), (float)time);
+            GL.UniformMatrix4(GL.GetUniformLocation(hProgram, "inMatrix"), 1, false, ref mvp.M11);
 
             int indexCount = Tris.Length * 3;
+
+            GL.BindVertexArray(vaoTriangle);
+            GL.BindBuffer(BufferTarget.ElementArrayBuffer, vboTriangleIndices);
             GL.DrawElements(PrimitiveType.Triangles, indexCount, DrawElementsType.UnsignedInt, 0);
-
-            if (posLoc != -1) GL.DisableVertexAttribArray(posLoc);
-            if (colorLoc != -1) GL.DisableVertexAttribArray(colorLoc);
-            if (texLoc != -1) GL.DisableVertexAttribArray(texLoc);
-            if (normalLoc != -1) GL.DisableVertexAttribArray(normalLoc);
-
-            GL.BindVertexArray(0);
-            GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
-            GL.BindBuffer(BufferTarget.ElementArrayBuffer, 0);
         }
 
         private void DeleteBuffers()
         {
-            if (vao != 0) { GL.DeleteVertexArray(vao); vao = 0; }
-            if (vbo != 0) { GL.DeleteBuffer(vbo); vbo = 0; }
-            if (ebo != 0) { GL.DeleteBuffer(ebo); ebo = 0; }
-            buffersCreated = false;
+            if (vaoTriangle != 0) { GL.DeleteVertexArray(vaoTriangle); vaoTriangle = 0; }
+            if (vboTriangleIndices != 0) { GL.DeleteBuffer(vboTriangleIndices); vboTriangleIndices = 0; }
         }
 
         public void Dispose()
