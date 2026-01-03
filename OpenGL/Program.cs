@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Drawing2D;
+using System.Drawing.Imaging;
 using System.Linq;
 using System.Numerics;
 using System.Runtime.InteropServices;
@@ -36,7 +37,7 @@ namespace OpenGL
             int hProgram = 0;
             int tiuIndex = 1;
 
-            MainScene scene = new MainScene();
+            ManyObjectsScene scene = new ManyObjectsScene();
 
             w.Load += () =>
             {
@@ -65,6 +66,10 @@ namespace OpenGL
                 GL.DepthFunc(DepthFunction.Less);
                 //GL.Disable(EnableCap.CullFace);
                 GL.Enable(EnableCap.CullFace);
+
+                // enable alpha blending so textures with alpha (like cloud.png) render correctly
+                GL.Enable(EnableCap.Blend);
+                GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
 
                 var hVertexShader = LoadShader(ShaderType.VertexShader, Path.GetFullPath("Shaders/defaultVertexShader.vert"));
                 var hFragmentShader = LoadShader(ShaderType.FragmentShader, Path.GetFullPath("Shaders/defaultFragmentShader.frag"));
@@ -133,16 +138,60 @@ namespace OpenGL
         }
         public static int LoadTexture(string path)
         {
-            using var bitmap = new Bitmap(path);
-            var data = bitmap.LockBits(new Rectangle(0, 0, bitmap.Width, bitmap.Height), System.Drawing.Imaging.ImageLockMode.ReadOnly, System.Drawing.Imaging.PixelFormat.Format24bppRgb);
+            // Load image, preserve alpha if present, upload as sRGB (with alpha when needed)
+            using var original = new Bitmap(path);
 
-            GL.GenTextures(1, out int hTextureObject);
-            GL.BindTexture(TextureTarget.Texture2D, hTextureObject);
-            GL.TexParameterI(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, new int[] { (int)TextureMinFilter.Nearest });
-            GL.TexParameterI(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, new int[] { (int)TextureMagFilter.Linear });
-            GL.PixelStore(PixelStoreParameter.UnpackAlignment, 1);
-            GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Srgb8, bitmap.Width, bitmap.Height, 0, PixelFormat.Bgr, PixelType.UnsignedByte, data.Scan0);
-            return hTextureObject;
+            // Detect alpha presence
+            bool hasAlpha = System.Drawing.Image.IsAlphaPixelFormat(original.PixelFormat);
+
+            // Ensure we have a bitmap with a known packed format for LockBits
+            var texBmp = new Bitmap(original.Width, original.Height, hasAlpha ? System.Drawing.Imaging.PixelFormat.Format32bppArgb : System.Drawing.Imaging.PixelFormat.Format24bppRgb);
+            using (var g = Graphics.FromImage(texBmp))
+            {
+                g.CompositingMode = CompositingMode.SourceCopy;
+                g.InterpolationMode = InterpolationMode.HighQualityBicubic;
+                g.DrawImage(original, 0, 0, original.Width, original.Height);
+            }
+
+            System.Drawing.Imaging.PixelFormat lockFormat = hasAlpha ? System.Drawing.Imaging.PixelFormat.Format32bppArgb : System.Drawing.Imaging.PixelFormat.Format24bppRgb;
+            var rect = new Rectangle(0, 0, texBmp.Width, texBmp.Height);
+            var data = texBmp.LockBits(rect, ImageLockMode.ReadOnly, lockFormat);
+
+            try
+            {
+                GL.GenTextures(1, out int hTextureObject);
+                GL.BindTexture(TextureTarget.Texture2D, hTextureObject);
+
+                // Filtering and wrapping
+                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (int)TextureWrapMode.Repeat);
+                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (int)TextureWrapMode.Repeat);
+                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Linear);
+                // Use trilinear mipmapping for minification
+                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.LinearMipmapLinear);
+
+                // Pixel store alignment: 1 is safe for tightly packed rows (good for 24bpp), keep 1 to be safe
+                GL.PixelStore(PixelStoreParameter.UnpackAlignment, 1);
+
+                // Choose internal and pixel formats depending on alpha presence
+                PixelInternalFormat internalFormat = hasAlpha ? PixelInternalFormat.Srgb8Alpha8 : PixelInternalFormat.Srgb8;
+                OpenTK.Graphics.OpenGL4.PixelFormat inputFormat = hasAlpha ? OpenTK.Graphics.OpenGL4.PixelFormat.Bgra : OpenTK.Graphics.OpenGL4.PixelFormat.Bgr; // GDI+ stores 32bpp as BGRA and 24bpp as BGR
+                PixelType inputType = PixelType.UnsignedByte;
+
+                GL.TexImage2D(TextureTarget.Texture2D, 0, internalFormat, texBmp.Width, texBmp.Height, 0, inputFormat, inputType, data.Scan0);
+
+                // Generate mipmaps so textures are MIP mapped
+                GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
+
+                // Optionally set max LOD if desired:
+                // GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMaxLod, 8);
+
+                return hTextureObject;
+            }
+            finally
+            {
+                texBmp.UnlockBits(data);
+                texBmp.Dispose();
+            }
         }
     }
 }

@@ -5,10 +5,6 @@ VisualStudioVersion = 17.11.35312.102
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ColorInterpolation", "ColorInterpolation\ColorInterpolation.csproj", "{655315C9-9A5D-4076-9166-D8F56EC0825C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RayTracing", "RayTracing\RayTracing.csproj", "{45FFB3EC-EB1F-4BDD-9362-F9E8241600D5}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Rasterization", "Rasterization\Rasterization.csproj", "{9AE0CAA7-195A-43B2-AEFD-1A74D6653E33}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenGL", "OpenGL\OpenGL.csproj", "{6C7B6BE2-6BAC-49FB-96EE-8036077F3A27}"
 EndProject
 Global
@@ -21,14 +17,6 @@ Global
 		{655315C9-9A5D-4076-9166-D8F56EC0825C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{655315C9-9A5D-4076-9166-D8F56EC0825C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{655315C9-9A5D-4076-9166-D8F56EC0825C}.Release|Any CPU.Build.0 = Release|Any CPU
-		{45FFB3EC-EB1F-4BDD-9362-F9E8241600D5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{45FFB3EC-EB1F-4BDD-9362-F9E8241600D5}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{45FFB3EC-EB1F-4BDD-9362-F9E8241600D5}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{45FFB3EC-EB1F-4BDD-9362-F9E8241600D5}.Release|Any CPU.Build.0 = Release|Any CPU
-		{9AE0CAA7-195A-43B2-AEFD-1A74D6653E33}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{9AE0CAA7-195A-43B2-AEFD-1A74D6653E33}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{9AE0CAA7-195A-43B2-AEFD-1A74D6653E33}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{9AE0CAA7-195A-43B2-AEFD-1A74D6653E33}.Release|Any CPU.Build.0 = Release|Any CPU
 		{6C7B6BE2-6BAC-49FB-96EE-8036077F3A27}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{6C7B6BE2-6BAC-49FB-96EE-8036077F3A27}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6C7B6BE2-6BAC-49FB-96EE-8036077F3A27}.Release|Any CPU.ActiveCfg = Release|Any CPU

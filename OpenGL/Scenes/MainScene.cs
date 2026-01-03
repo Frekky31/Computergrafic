@@ -7,6 +7,7 @@ using System.Linq;
 using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
+using System.IO;
 
 namespace OpenGL.Scenes
 {
@@ -27,16 +28,32 @@ namespace OpenGL.Scenes
                 SpecularStrength = 0.3f
             };
 
-            var path = Path.GetFullPath("Textures/bricks.jpg");
-            var hTexture = Program.LoadTexture(path);
-            matBricks.TextureHandle = hTexture;
+            // material for cubes using cloud texture (may contain alpha)
+            Material matCloud = new()
+            {
+                Color = new Vector3(1f, 1f, 1f),
+                Shininess = 32f,
+                SpecularStrength = 0.3f,
+                HasTextureAlpha = true
+            };
+
+            var pathBricks = Path.GetFullPath("Textures/bricks.jpg");
+            var hTextureBricks = Program.LoadTexture(pathBricks);
+            matBricks.TextureHandle = hTextureBricks;
+
+            var pathCloud = Path.GetFullPath("Textures/cloud.png");
+            var hTextureCloud = Program.LoadTexture(pathCloud);
+            matCloud.TextureHandle = hTextureCloud;
 
             SceneGraphNode cube1Node = new(cube1.Vertices, cube1.Tris, "cube1");
             SceneGraphNode cube2Node = new(cube2.Vertices, cube2.Tris, "cube2");
             SceneGraphNode sphere1Node = new(sphere1.Vertices, sphere1.Tris, "sphere1");
-            cube1Node.Material = matBricks;
-            cube2Node.Material = matBricks;
+
+            // assign cloud texture material to cubes; keep sphere using bricks
+            cube1Node.Material = matCloud;
+            cube2Node.Material = matCloud;
             sphere1Node.Material = matBricks;
+
             Root.AddChild(cube1Node, Matrix4x4.Identity);
             Root.AddChild(cube2Node, Matrix4x4.Identity);
             Root.AddChild(sphere1Node, Matrix4x4.Identity);

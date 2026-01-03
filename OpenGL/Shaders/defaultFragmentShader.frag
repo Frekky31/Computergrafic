@@ -34,9 +34,17 @@ uniform float ambientIntensity = 1.0;
 void main()
 {
     vec3 N = normalize(fragNormal);
-    vec3 baseColor = material.hasTexture == 1 ? texture(material.texture, fragTex).rgb : material.color * vertColor;
+
+    // sample texture (may contain alpha) or use color
+    vec4 texCol = vec4(0.0, 0.0, 0.0, 1.0);
+    if (material.hasTexture == 1)
+        texCol = texture(material.texture, fragTex);
+
+    vec3 baseColor = material.hasTexture == 1 ? texCol.rgb : material.color * vertColor;
     if (!any(notEqual(vertColor, vec3(0.0)))) // if vertColor is zero, still allow material.color
-        baseColor = material.hasTexture == 1 ? texture(material.texture, fragTex).rgb : material.color;
+        baseColor = material.hasTexture == 1 ? texCol.rgb : material.color;
+
+    float alpha = material.hasTexture == 1 ? texCol.a : 1.0;
 
     // ambient
     vec3 result = ambientColor * ambientIntensity * baseColor;
@@ -63,6 +71,8 @@ void main()
         result += (diffuse + vec3(spec)) * baseColor;
     }
 
-    // gamma-correct output if needed elsewhere; keep linear here
-    outColor = vec4(result, 1.0);
+    // output with alpha from texture when present
+    // option: discard tiny alpha fragments (uncomment if you want cutout behavior)
+    // if (alpha < 0.01) discard;
+    outColor = vec4(result, alpha);
 }

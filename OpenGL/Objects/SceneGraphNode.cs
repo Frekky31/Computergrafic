@@ -25,6 +25,11 @@ namespace OpenGL.Objects
         int vaoTriangle = 0;
         int vboTriangleIndices = 0;
 
+        // Collect transparent draw entries (with a representative depth) when top-level Render is invoked.
+        // This allows drawing transparent geometry back-to-front across nodes as well as per-triangle inside a node.
+        private static readonly List<(float Depth, Action Draw)> s_transparentDrawActions = new();
+        private static bool s_collectingTransparent = false;
+
         public SceneGraphNode(string name)
         {
             Name = name;
@@ -183,6 +188,15 @@ namespace OpenGL.Objects
 
         public void Render(Matrix4x4 modelMatrix, Matrix4x4 viewProjectionMatrix, int shaderProgram, float time)
         {
+            bool amRootCall = false;
+            if (!s_collectingTransparent)
+            {
+                // top-level Render invocation: start collecting transparent draw actions
+                s_collectingTransparent = true;
+                s_transparentDrawActions.Clear();
+                amRootCall = true;
+            }
+
             if (Vertices != null && Vertices.Length != 0 && Tris != null && Tris.Length != 0)
             {
                 Matrix4x4 normalM;
@@ -198,6 +212,26 @@ namespace OpenGL.Objects
             foreach (var (Node, Transformation) in Children)
             {
                 Node.Render(Transformation * modelMatrix, viewProjectionMatrix, shaderProgram, time);
+            }
+
+            if (amRootCall)
+            {
+                // All opaque geometry has been drawn. Now draw transparent geometry back-to-front across nodes.
+                // Disable depth writes so transparent fragments do not occlude each other in the depth buffer.
+                GL.DepthMask(false);
+                GL.Enable(EnableCap.Blend);
+                GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
+
+                // Sort entries by representative depth (far -> near) so closest are drawn last.
+                s_transparentDrawActions.Sort((a, b) => b.Depth.CompareTo(a.Depth));
+                foreach (var entry in s_transparentDrawActions)
+                    entry.Draw();
+
+                // restore depth writes
+                GL.DepthMask(true);
+
+                s_collectingTransparent = false;
+                s_transparentDrawActions.Clear();
             }
         }
 
@@ -227,6 +261,82 @@ namespace OpenGL.Objects
 
             GL.BindVertexArray(vaoTriangle);
             GL.BindBuffer(BufferTarget.ElementArrayBuffer, vboTriangleIndices);
+
+            // If this node's material has texture alpha, defer triangle-level drawing so we can sort triangles back-to-front
+            // and also sort nodes across the scene by representative depth.
+            if (Material != null && Material.HasTextureAlpha)
+            {
+                var vao = vaoTriangle;
+                var ebo = vboTriangleIndices;
+                var tris = Tris;
+                var verts = Vertices;
+                var program = hProgram;
+                var modelLocal = model;
+                var normalMLocal = normalM;
+                var mvpLocal = mvp;
+                var timeLocal = time;
+                var lightsLocal = combined;
+                var materialLocal = Material;
+
+                // Compute per-triangle depths now and produce a sorted triangle index array.
+                var depths = new List<(int TriIndex, float Depth)>(tris.Length);
+                for (int ti = 0; ti < tris.Length; ti++)
+                {
+                    var t = tris[ti];
+                    var p0 = verts[t.A].Position;
+                    var p1 = verts[t.B].Position;
+                    var p2 = verts[t.C].Position;
+                    var center = new Vector3((p0.X + p1.X + p2.X) / 3f, (p0.Y + p1.Y + p2.Y) / 3f, (p0.Z + p1.Z + p2.Z) / 3f);
+                    var center4 = new Vector4(center, 1.0f);
+
+                    var clip = Vector4.Transform(center4, mvpLocal);
+                    float ndcZ = clip.W != 0.0f ? clip.Z / clip.W : clip.Z;
+                    depths.Add((ti, ndcZ));
+                }
+
+                // Representative node depth (average of triangle centers) used to sort nodes across the scene.
+                float nodeDepth = 0f;
+                if (depths.Count > 0)
+                {
+                    float sum = 0f;
+                    for (int i = 0; i < depths.Count; i++) sum += depths[i].Depth;
+                    nodeDepth = sum / depths.Count;
+                }
+
+                // Sort triangles far -> near for correct back-to-front per-triangle drawing.
+                depths.Sort((a, b) => b.Depth.CompareTo(a.Depth));
+                var sortedTriIndices = new int[depths.Count];
+                for (int i = 0; i < depths.Count; i++) sortedTriIndices[i] = depths[i].TriIndex;
+
+                // Add entry with depth so the root flush can sort across nodes.
+                s_transparentDrawActions.Add((nodeDepth, () =>
+                {
+                    GL.UseProgram(program);
+                    GL.BindVertexArray(vao);
+                    GL.BindBuffer(BufferTarget.ElementArrayBuffer, ebo);
+
+                    GL.Uniform1(GL.GetUniformLocation(program, "inTime"), timeLocal);
+                    GL.UniformMatrix4(GL.GetUniformLocation(program, "inMatrix"), 1, false, ref mvpLocal.M11);
+                    GL.UniformMatrix4(GL.GetUniformLocation(program, "inModelMatrix"), 1, false, ref modelLocal.M11);
+                    GL.UniformMatrix4(GL.GetUniformLocation(program, "inNormalMatrix"), 1, false, ref normalMLocal.M11);
+
+                    materialLocal?.Apply(program, textureUnitIndex: 0);
+                    UploadLightsToShader(program, lightsLocal);
+
+                    // Draw each triangle individually in sorted order
+                    for (int s = 0; s < sortedTriIndices.Length; s++)
+                    {
+                        int triIndex = sortedTriIndices[s];
+                        IntPtr offset = (IntPtr)(triIndex * 3 * sizeof(uint));
+                        GL.DrawElements(PrimitiveType.Triangles, 3, DrawElementsType.UnsignedInt, offset);
+                    }
+                }));
+
+                // Defer drawing now
+                return;
+            }
+
+            // default fast path: draw whole element array for opaque or non-alpha materials
             GL.DrawElements(PrimitiveType.Triangles, indexCount, DrawElementsType.UnsignedInt, 0);
         }
 

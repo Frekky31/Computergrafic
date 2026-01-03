@@ -10,6 +10,9 @@ namespace OpenGL.Objects
         // OpenGL texture handle (0 = none)
         public int TextureHandle { get; set; } = 0;
 
+        // If true the texture contains an alpha channel and the object should be treated as (partially) transparent
+        public bool HasTextureAlpha { get; set; } = false;
+
         public float Shininess { get; set; } = 32f;            // specular exponent
         public float SpecularStrength { get; set; } = 0.5f;    // specular multiplier
 

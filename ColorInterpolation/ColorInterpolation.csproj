@@ -12,8 +12,4 @@
     <PackageReference Include="Extended.Wpf.Toolkit" Version="5.0.0" />
   </ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\RayTracing\RayTracing.csproj" />
-  </ItemGroup>
-
 </Project>
