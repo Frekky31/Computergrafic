@@ -1,11 +1,35 @@
 ﻿#version 410 core
 
-in vec3 color;
-in vec2 texCoord;
-in vec3 normal;
-in vec3 pos;
+in vec3 fragPos;
+in vec3 fragNormal;
+in vec2 fragTex;
+in vec3 vertColor;
+
 out vec4 outColor;
-uniform sampler2D brickTexture;
+
+// Material struct must match names used by Material.Apply(...)
+struct Material {
+    vec3 color;
+    float shininess;
+    float specularStrength;
+    sampler2D texture;
+    int hasTexture;
+};
+uniform Material material;
+
+// Lights (must match upload names from SceneGraphNode)
+struct Light {
+    vec3 position;
+    vec3 color;
+    float intensity;
+};
+uniform int lightCount;
+uniform Light lights[8];
+
+// camera / scene
+uniform vec3 viewPos;
+uniform vec3 ambientColor = vec3(0.08, 0.08, 0.08);
+uniform float ambientIntensity = 1.0;
 uniform float inTime;
 
 // Equivalent to the helper in the original shader
@@ -61,6 +85,6 @@ void main()
     extrusion *= 1.5;
     extrusion *= vignette;
 
-    outColor = vec4(col * color, extrusion);
-    outColor *= texture(brickTexture, texCoord);
+    outColor = vec4(col * material.color, extrusion);
+    outColor *= texture(material.texture, fragTex);
 }

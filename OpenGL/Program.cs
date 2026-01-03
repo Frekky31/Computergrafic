@@ -60,7 +60,6 @@ namespace OpenGL
                 GL.Enable(EnableCap.FramebufferSrgb);
                 GL.ClearColor(0.5f, 0.5f, 0.5f, 0);
                 GL.ClearDepth(1);
-                // Ensure depth testing and depth writes are enabled so Z-buffering works
                 GL.Enable(EnableCap.DepthTest);
                 GL.DepthMask(true);
                 GL.DepthFunc(DepthFunction.Less);
@@ -78,12 +77,6 @@ namespace OpenGL
                 GL.GetProgram(hProgram, GetProgramParameterName.LinkStatus, out int status);
                 if (status != (int)All.True)
                     throw new Exception(GL.GetProgramInfoLog(hProgram));
-
-
-                GL.ActiveTexture(TextureUnit.Texture0 + tiuIndex);
-                var path = Path.GetFullPath("Textures/bricks.jpg");
-                var hTexture = LoadTexture(path);
-                GL.BindTexture(TextureTarget.Texture2D, hTexture);
                 
                 scene.LoadScene(hProgram);
 

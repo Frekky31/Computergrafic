@@ -12,6 +12,14 @@ namespace OpenGL.Objects
         public (int A, int B, int C)[] Tris { get; private set; } = [];
         public string Name { get; set; } = string.Empty;
 
+        // Global lights shared by all nodes (use SceneGraphNode.AddGlobalLight(...) to populate)
+        public static List<LightObject> GlobalLights { get; } = new();
+
+        // Node-local lights (added to global ones when uploading)
+        public List<LightObject> Lights { get; } = [];
+
+        public Material? Material { get; set; } = null;
+
         public List<(SceneGraphNode Node, Matrix4x4 Transformation)> Children { get; } = [];
 
         int vaoTriangle = 0;
@@ -22,7 +30,7 @@ namespace OpenGL.Objects
             Name = name;
         }
 
-        public SceneGraphNode(IEnumerable<Vertex> verts, IEnumerable<(int A, int B, int C)> tris, string name)
+        public SceneGraphNode(IEnumerable<Vertex> verts, IEnumerable<(int A, int, int)> tris, string name)
         {
             Vertices = verts is Vertex[] arrV ? arrV : [.. verts];
             Tris = tris is (int, int, int)[] arrT ? arrT : [.. tris];
@@ -55,6 +63,10 @@ namespace OpenGL.Objects
                 }
             }
         }
+
+        // Helpers to manage global lights
+        public static void AddGlobalLight(LightObject light) => GlobalLights.Add(light);
+        public static void ClearGlobalLights() => GlobalLights.Clear();
 
         public void Load(int hProgram)
         {
@@ -167,6 +179,8 @@ namespace OpenGL.Objects
             }
         }
 
+
+
         public void Render(Matrix4x4 modelMatrix, Matrix4x4 viewProjectionMatrix, int shaderProgram, float time)
         {
             if (Vertices != null && Vertices.Length != 0 && Tris != null && Tris.Length != 0)
@@ -197,11 +211,50 @@ namespace OpenGL.Objects
             GL.Uniform1(GL.GetUniformLocation(hProgram, "inTime"), (float)time);
             GL.UniformMatrix4(GL.GetUniformLocation(hProgram, "inMatrix"), 1, false, ref mvp.M11);
 
+            GL.UniformMatrix4(GL.GetUniformLocation(hProgram, "inModelMatrix"), 1, false, ref model.M11);
+            GL.UniformMatrix4(GL.GetUniformLocation(hProgram, "inNormalMatrix"), 1, false, ref normalM.M11);
+
+            // Apply material (bind its texture and set material uniforms) if present
+            Material?.Apply(hProgram, textureUnitIndex: 0);
+
+            // Combine global lights and node-local lights, then upload to shader
+            var combined = new List<LightObject>(GlobalLights.Count + Lights.Count);
+            combined.AddRange(GlobalLights);
+            combined.AddRange(Lights);
+            UploadLightsToShader(hProgram, combined);
+
             int indexCount = Tris.Length * 3;
 
             GL.BindVertexArray(vaoTriangle);
             GL.BindBuffer(BufferTarget.ElementArrayBuffer, vboTriangleIndices);
             GL.DrawElements(PrimitiveType.Triangles, indexCount, DrawElementsType.UnsignedInt, 0);
+        }
+
+        private void UploadLightsToShader(int hProgram, IReadOnlyList<LightObject> lights)
+        {
+            if (hProgram == 0) return;
+
+            const int MAX_LIGHTS = 8;
+            int count = Math.Min(lights?.Count ?? 0, MAX_LIGHTS);
+
+            int locCount = GL.GetUniformLocation(hProgram, "lightCount");
+            if (locCount != -1)
+                GL.Uniform1(locCount, count);
+
+            for (int i = 0; i < count; i++)
+            {
+                var L = lights[i];
+                var baseName = $"lights[{i}]";
+
+                var locPos = GL.GetUniformLocation(hProgram, baseName + ".position");
+                if (locPos != -1) GL.Uniform3(locPos, L.Position.X, L.Position.Y, L.Position.Z);
+
+                var locColor = GL.GetUniformLocation(hProgram, baseName + ".color");
+                if (locColor != -1) GL.Uniform3(locColor, L.Color.X, L.Color.Y, L.Color.Z);
+
+                var locIntensity = GL.GetUniformLocation(hProgram, baseName + ".intensity");
+                if (locIntensity != -1) GL.Uniform1(locIntensity, L.Intensity);
+            }
         }
 
         private void DeleteBuffers()
